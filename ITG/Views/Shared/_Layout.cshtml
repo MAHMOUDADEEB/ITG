@@ -1,0 +1,83 @@
+@{
+    var isRtl = CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft;
+    var hideSearch = ViewData["HideSearch"] as bool? == true;
+}
+<!DOCTYPE html>
+<html lang="@CultureInfo.CurrentUICulture.TwoLetterISOLanguageName" dir="@(isRtl ? "rtl" : "ltr")">
+<head>
+    <partial name="_HeadAssets" />
+    <link rel="stylesheet" href="~/lib/tom-select-2.6.2/tom-select.bootstrap5.min.css" />
+    <link rel="stylesheet" href="~/css/theme.css" asp-append-version="true" />
+</head>
+<body class="app-body" data-text-ok="@L["Yes, continue"]" data-text-alert="@L["OK"]" data-text-cancel="@L["Cancel"]" data-text-no-results="@L["No results found"]" data-text-search="@L["Search"]"
+      data-chart-src="@Url.Content("~/lib/chart.js-4.6.1/chart.umd.min.js")">
+
+    @* ---------- Top bar ---------- *@
+    <header class="app-topbar">
+        <div class="app-topbar-start">
+            @* Menu button: opens the menu on phones, shrinks it to icons on computers *@
+            <button type="button" class="topbar-icon-btn app-menu-btn d-lg-none"
+                    data-bs-toggle="offcanvas" data-bs-target="#appSidebar" aria-controls="appSidebar"
+                    aria-label="@L["Main menu"]" title="@L["Main menu"]">
+                <i class="bi bi-list" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="topbar-icon-btn app-menu-btn d-none d-lg-inline-flex" data-sidebar-toggle
+                    aria-label="@L["Show / hide menu"]" title="@L["Show / hide menu"]">
+                <i class="bi bi-list" aria-hidden="true"></i>
+            </button>
+
+            <a class="app-brand" asp-area="" asp-controller="Home" asp-action="Index" aria-label="ITG">
+                <img src="~/images/itg-logo.png" alt="ITG" width="70" height="70" />
+            </a>
+
+            <h1 class="app-page-title">@ViewData["Title"]</h1>
+        </div>
+
+        @if (!hideSearch)
+        {
+            <partial name="_TopbarSearch" />
+        }
+
+        @if (!hideSearch)
+        {
+            @* Phones: the search box opens under the top bar *@
+            <button type="button" class="topbar-icon-btn topbar-search-toggle ms-auto" data-search-toggle
+                    aria-label="@L["Search"]" title="@L["Search"]">
+                <i class="bi bi-search" aria-hidden="true"></i>
+            </button>
+        }
+
+        <partial name="_TopbarActions" />
+    </header>
+
+    <div class="app-shell">
+
+        @* ---------- Sidebar (fixed on desktop, slide-in drawer on mobile) ---------- *@
+        <aside class="offcanvas-lg offcanvas-start app-sidebar" tabindex="-1" id="appSidebar" aria-labelledby="appSidebarLabel">
+            <div class="offcanvas-header d-lg-none">
+                <h2 class="offcanvas-title h5 mb-0" id="appSidebarLabel">ITG</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#appSidebar"
+                        aria-label="@L["Close"]"></button>
+            </div>
+            <div class="offcanvas-body">
+                <partial name="_Sidebar" />
+            </div>
+        </aside>
+
+        @* ---------- Page content ---------- *@
+        <main class="app-main">
+            <div class="app-content">
+                <partial name="_StatusMessages" />
+                @RenderBody()
+            </div>
+        </main>
+
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap-5.3.8/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/tom-select-2.6.2/tom-select.complete.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

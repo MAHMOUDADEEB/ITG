@@ -1,0 +1,71 @@
+﻿@model LoginViewModel
+@{
+    ViewData["Title"] = L["Sign In"].Value;
+    Layout = "_AuthLayout";
+}
+
+<div class="container">
+    <div class="row auth-row align-items-center justify-content-between g-5">
+
+        @* ---------- Hero ---------- *@
+        <section class="col-lg-6 text-center text-lg-start">
+            <p class="auth-hero-eyebrow">@L["ITG LEARNING PLATFORM"]</p>
+
+            <h1 class="auth-hero-title">
+                <span class="d-block">@L["Learn Today"]</span>
+                <span class="d-block text-itg-primary">@L["Grow Tomorrow"]</span>
+            </h1>
+
+            <p class="auth-hero-text d-none d-md-block">@L["LoginHeroText"]</p>
+
+            <div class="d-none d-lg-block">
+                <hr class="auth-hero-divider" />
+                <h2 class="auth-hero-subtitle">@L["About ITG"]</h2>
+                <p class="auth-hero-text">@L["LoginAboutText"]</p>
+            </div>
+        </section>
+
+        @* ---------- Login card ---------- *@
+        <section class="col-lg-5 col-xl-4">
+            <div class="auth-card">
+                <img src="~/images/itg-logo.png" alt="ITG" class="auth-logo" width="77" height="70" />
+
+                <h2 class="auth-card-title">@L["Sign In"]</h2>
+                <p class="auth-card-subtitle">@L["Access Your Learning Account"]</p>
+
+                <form asp-controller="Account" asp-action="Login" method="post">
+                    <input type="hidden" asp-for="ReturnUrl" />
+
+                    <div asp-validation-summary="ModelOnly" class="auth-alert alert alert-danger py-2 small" role="alert"></div>
+
+                    <div class="auth-field">
+                        <label asp-for="Email" class="auth-label"></label>
+                        <input asp-for="Email" class="form-control auth-input"
+                               placeholder="@L["Enter your Email"]" autocomplete="username" dir="ltr" />
+                        <span asp-validation-for="Email"></span>
+                    </div>
+
+                    <div class="auth-field">
+                        <label asp-for="Password" class="auth-label"></label>
+                        <div class="password-field">
+                            <input asp-for="Password" class="form-control auth-input"
+                                   placeholder="@L["Enter your Password"]" autocomplete="current-password" />
+                            <button type="button" class="password-toggle" data-password-toggle="Password"
+                                    aria-label="@L["Show password"]" aria-pressed="false">
+                                <i class="bi bi-eye-fill" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Password"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-auth">@L["Sign In"]</button>
+                </form>
+            </div>
+        </section>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,52 @@
+@model IReadOnlyList<AssessmentQuestionView>
+@{
+    ViewData["Title"] = L["Assess Your Skills"].Value;
+    ViewData["HideSearch"] = true;
+    var letters = new[] { "A", "B", "C", "D" };
+}
+
+<form asp-action="Submit" method="post" data-exam-form data-require-all
+      data-msg-unanswered="@L["Please answer all the questions. {0} left."]">
+
+    <div class="exam-bar">
+        <div class="exam-bar-title">
+            <h2>@L["Assess Your Skills"]</h2>
+            <span>@L["Choose what you would really do. There are no trick questions."]</span>
+        </div>
+        <div class="exam-bar-stats">
+            <span class="exam-bar-answered">
+                <i class="bi bi-check2-square" aria-hidden="true"></i>
+                <span data-answered-count>0</span>/@Model.Count
+            </span>
+        </div>
+    </div>
+
+    <ol class="question-list">
+        @for (var i = 0; i < Model.Count; i++)
+        {
+            var question = Model[i];
+            <li class="question-card">
+                <p class="question-number">@L["Question {0}", i + 1] · <span class="text-itg-primary">@L[question.Skill]</span></p>
+                <h3 class="question-text">@question.Scenario</h3>
+                <div class="option-list" role="radiogroup" aria-label="@L["Question {0}", i + 1]">
+                    @for (var j = 0; j < question.Options.Count; j++)
+                    {
+                        <label class="option-tile">
+                            <input type="radio" name="q@(i)" value="@j" class="visually-hidden" data-answer />
+                            <span class="option-letter">@letters[j]</span>
+                            <span class="option-text">@question.Options[j]</span>
+                        </label>
+                    }
+                </div>
+            </li>
+        }
+    </ol>
+
+    <div class="exam-submit">
+        <button type="submit" class="btn btn-itg btn-itg--pill btn-itg--lg" data-loading-button="@L["Analyzing your answers..."]">
+            <i class="bi bi-send-check" aria-hidden="true"></i> @L["Submit Assessment"]
+        </button>
+    </div>
+</form>
+
+<partial name="_LoadingOverlay" />

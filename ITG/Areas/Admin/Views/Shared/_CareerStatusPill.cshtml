@@ -1,0 +1,16 @@
+@model CareerStatus
+@* Colored status pill for an employee's overall career status *@
+@{
+    var (css, text) = Model switch
+    {
+        CareerStatus.ReadyForPromotion => ("success", "Completed"),
+        CareerStatus.ReviewPending => ("warning", "Review Pending"),
+        CareerStatus.InProgress => ("info", "In Progress"),
+        CareerStatus.ChoosingPath => ("info", "Choosing Path"),
+        CareerStatus.AwaitingPathDecision => ("warning", "Awaiting Path Decision"),
+        CareerStatus.TopOfPath => ("success", "Top Level"),
+        CareerStatus.NoPosition => ("muted", "No Position"),
+        _ => ("muted", "Not Started")
+    };
+}
+<span class="status-pill status-pill--@css">@L[text]</span>

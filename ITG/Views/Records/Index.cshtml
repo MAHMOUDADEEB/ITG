@@ -1,0 +1,137 @@
+@model EmployeeRecords
+@{
+    ViewData["Title"] = L["Records"].Value;
+    // "Feb 20, 2024" in English, "20 شباط 2024" in Arabic
+    var dateFormat = CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft ? "d MMMM yyyy" : "MMM d, yyyy";
+}
+
+<header class="page-header">
+    <h2 class="page-title">@L["Records"]</h2>
+    <p class="page-subtitle">@L["Track Assessments, Certificates, AI Evaluation, And Current Learning Progress."]</p>
+</header>
+
+@* ---------- Summary cards ---------- *@
+<div class="row g-4 records-stats">
+    <div class="col-md-4">
+        <a class="record-stat record-stat--blue" asp-controller="Exams" asp-action="Index" asp-route-filter="completed">
+            <i class="bi bi-clipboard-check record-stat-icon" aria-hidden="true"></i>
+            <span class="record-stat-body">
+                <span class="record-stat-label">@L["Exams Passed"]</span>
+                <span class="record-stat-value">@Model.ExamsPassed</span>
+            </span>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a class="record-stat record-stat--green" asp-controller="Roadmap" asp-action="Index">
+            <i class="bi bi-file-earmark-text record-stat-icon" aria-hidden="true"></i>
+            <span class="record-stat-body">
+                <span class="record-stat-label">@L["Certificates Earned"]</span>
+                <span class="record-stat-value">@Model.CertificatesEarned</span>
+            </span>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a class="record-stat record-stat--purple" asp-controller="Home" asp-action="Index">
+            <i class="bi bi-star record-stat-icon" aria-hidden="true"></i>
+            <span class="record-stat-body">
+                <span class="record-stat-label">@L["All Skills Score"]</span>
+                <span class="record-stat-value">@(Model.SkillsScore.HasValue ? $"{Model.SkillsScore}/100" : "—")</span>
+            </span>
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 records-panels">
+
+    @* ---------- Verified certificates ---------- *@
+    <div class="col-xxl-6">
+        <section class="surface record-panel" aria-labelledby="certificatesTitle">
+            <h3 class="record-panel-title" id="certificatesTitle">
+                <i class="bi bi-patch-check-fill text-itg-primary" aria-hidden="true"></i>
+                @L["Certificates"]
+            </h3>
+
+            @if (Model.Certificates.Count == 0)
+            {
+                <div class="empty-state empty-state--compact">
+                    <i class="bi bi-award" aria-hidden="true"></i>
+                    <h3>@L["No certificates yet"]</h3>
+                    <p>@L["Certificates appear here after HR verifies them."]</p>
+                </div>
+            }
+            else
+            {
+                <ul class="record-cert-list">
+                    @foreach (var certificate in Model.Certificates)
+                    {
+                        <li class="record-cert">
+                            <span class="record-cert-icon" aria-hidden="true">
+                                <i class="bi bi-file-earmark-text"></i>
+                                <i class="bi bi-award-fill record-cert-badge"></i>
+                            </span>
+                            <span class="record-cert-title">@certificate.Title</span>
+                            <span class="record-cert-date">@L["Issued {0}", certificate.IssuedOn.ToString(dateFormat)]</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    @* ---------- Exams records ---------- *@
+    <div class="col-xxl-6">
+        <section class="surface record-panel" aria-labelledby="examsTitle">
+            <h3 class="record-panel-title" id="examsTitle">
+                <i class="bi bi-clipboard-check text-itg-primary" aria-hidden="true"></i>
+                @L["Exams Records"]
+            </h3>
+
+            @if (Model.Exams.Count == 0)
+            {
+                <div class="empty-state empty-state--compact">
+                    <i class="bi bi-ui-checks" aria-hidden="true"></i>
+                    <h3>@L["No exams yet"]</h3>
+                    <p>@L["Take an AI exam to test your knowledge."]</p>
+                    <a class="btn btn-itg btn-itg--pill mt-2" asp-controller="Exams" asp-action="Index">@L["Go to Exams"]</a>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive record-table-wrap">
+                    <table class="itg-table record-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">@L["Exams Name"]</th>
+                                <th scope="col" class="text-center">@L["Attempts"]</th>
+                                <th scope="col" class="text-center">@L["Final Score"]</th>
+                                <th scope="col" class="text-center">@L["Status"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var exam in Model.Exams)
+                            {
+                                <tr>
+                                    <td>
+                                        <a class="record-exam-link" asp-controller="Exams" asp-action="Result" asp-route-id="@exam.LastAttemptId">@exam.Title</a>
+                                    </td>
+                                    <td class="text-center">@exam.Attempts</td>
+                                    <td class="text-center record-score">@exam.FinalScore/100</td>
+                                    <td class="text-center">
+                                        @if (exam.Passed)
+                                        {
+                                            <span class="status-pill status-pill--success">@L["Passed"]</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-pill status-pill--danger">@L["Failed"]</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
+</div>

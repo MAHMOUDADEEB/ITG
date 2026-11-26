@@ -1,0 +1,35 @@
+@{
+    ViewData["Title"] = L["AI"].Value;
+}
+
+<section class="chat" data-chat
+         data-send-url="@Url.Action("Send", "AiAssistant")"
+         data-error="@L["The AI service is not available right now. Please try again in a moment."]">
+    @Html.AntiForgeryToken()
+
+    @* ---------- Welcome (hidden after the first message) ---------- *@
+    <div class="chat-hero" data-chat-hero>
+        <span class="chat-hero-icon"><i class="bi bi-stars" aria-hidden="true"></i></span>
+        <h2 class="chat-hero-title">@L["How Can I Help You Today?"]</h2>
+        <p class="chat-hero-text">@L["Ask About Your Skills, Exams Or Next Career Step."]</p>
+
+        <div class="chat-suggestions">
+            <button type="button" class="chat-suggestion" data-chat-suggestion>@L["What should I do next in my roadmap?"]</button>
+            <button type="button" class="chat-suggestion" data-chat-suggestion>@L["How can I improve my leadership skills?"]</button>
+            <button type="button" class="chat-suggestion" data-chat-suggestion>@L["Explain SQL joins with a simple example."]</button>
+        </div>
+    </div>
+
+    @* ---------- Conversation ---------- *@
+    <div class="chat-log" data-chat-log aria-live="polite"></div>
+
+    @* ---------- Input ---------- *@
+    <form class="chat-input" data-chat-form>
+        <label for="chatMessage" class="visually-hidden">@L["Ask Anything"]</label>
+        <textarea id="chatMessage" rows="1" maxlength="2000" placeholder="@L["Ask Anything"]" data-chat-text></textarea>
+        <button type="submit" class="chat-send" aria-label="@L["Send"]" title="@L["Send"]">
+            <i class="bi bi-arrow-right flip-rtl" aria-hidden="true"></i>
+        </button>
+    </form>
+    <p class="chat-disclaimer">@L["AI answers can be wrong. Check important information."]</p>
+</section>

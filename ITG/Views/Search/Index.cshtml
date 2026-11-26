@@ -1,0 +1,137 @@
+@model SearchViewModel
+@{
+    ViewData["Title"] = L["Search"].Value;
+}
+
+<header class="page-header">
+    <h2 class="page-title">@L["Search Results"]</h2>
+    @if (Model.HasQuery)
+    {
+        <p class="page-subtitle">@(L["{0} results for \"{1}\"", Model.TotalCount, Model.Query])</p>
+    }
+</header>
+
+@if (!Model.HasQuery)
+{
+    <div class="empty-state">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <h3>@L["What are you looking for?"]</h3>
+        <p>@L["Type at least 2 letters in the search box to find pages, certificates and exams."]</p>
+    </div>
+}
+else if (Model.TotalCount == 0)
+{
+    <div class="empty-state">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <h3>@L["No results found"]</h3>
+        <p>@L["Try a different word, for example: SQL, cloud, leadership or certificate."]</p>
+    </div>
+}
+else
+{
+    @* ---------- Pages ---------- *@
+    if (Model.Pages.Count > 0)
+    {
+        <section class="search-section" aria-labelledby="pagesTitle">
+            <h3 class="search-section-title" id="pagesTitle">
+                @L["Pages"] <span class="search-count">@Model.Pages.Count</span>
+            </h3>
+            <div class="search-page-grid">
+                @foreach (var pageHit in Model.Pages)
+                {
+                    <a class="search-page" asp-controller="@pageHit.Controller" asp-action="Index">
+                        <span class="search-icon"><i class="bi @pageHit.Icon" aria-hidden="true"></i></span>
+                        <span class="search-text">
+                            <span class="search-title">@pageHit.Title</span>
+                            <span class="search-desc">@pageHit.Description</span>
+                        </span>
+                        <i class="bi bi-chevron-right search-arrow flip-rtl" aria-hidden="true"></i>
+                    </a>
+                }
+            </div>
+        </section>
+    }
+
+    @* ---------- Certificates ---------- *@
+    if (Model.Certificates.Count > 0)
+    {
+        <section class="search-section" aria-labelledby="certsTitle">
+            <h3 class="search-section-title" id="certsTitle">
+                @L["Certificates"] <span class="search-count">@Model.Certificates.Count</span>
+            </h3>
+            <ul class="surface search-list">
+                @foreach (var certificate in Model.Certificates)
+                {
+                    var (pillClass, pillText) = certificate.RoadmapStatus switch
+                    {
+                        RoadmapItemStatus.Verified => ("success", L["Completed"].Value),
+                        RoadmapItemStatus.Pending => ("warning", L["Pending Review"].Value),
+                        RoadmapItemStatus.Rejected => ("danger", L["Rejected"].Value),
+                        RoadmapItemStatus.NotSubmitted => ("info", L["In your roadmap"].Value),
+                        _ => ("muted", L["Not in your roadmap"].Value)
+                    };
+
+                    <li class="search-row">
+                        <span class="search-icon"><i class="bi bi-award" aria-hidden="true"></i></span>
+                        <span class="search-text">
+                            @if (certificate.RoadmapStatus != null)
+                            {
+                                <a class="search-title search-link" asp-controller="Roadmap" asp-action="Index" asp-fragment="cert-@certificate.CertificateId">@certificate.Title</a>
+                            }
+                            else
+                            {
+                                <span class="search-title">@certificate.Title</span>
+                            }
+                            <span class="search-desc">@certificate.Category@(string.IsNullOrEmpty(certificate.Description) ? "" : " · " + certificate.Description)</span>
+                        </span>
+                        <span class="status-pill status-pill--@pillClass">@pillText</span>
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+
+    @* ---------- Exams ---------- *@
+    if (Model.Exams.Count > 0)
+    {
+        <section class="search-section" aria-labelledby="examsTitle">
+            <h3 class="search-section-title" id="examsTitle">
+                @L["Exams"] <span class="search-count">@Model.Exams.Count</span>
+            </h3>
+            <ul class="surface search-list">
+                @foreach (var exam in Model.Exams)
+                {
+                    <li class="search-row">
+                        <span class="search-icon"><i class="bi bi-card-checklist" aria-hidden="true"></i></span>
+                        <span class="search-text">
+                            <span class="search-title">
+                                @exam.Title
+                                <partial name="_ExamRoleBadges" model="exam" />
+                            </span>
+                            <span class="search-desc">
+                                @L["{0} min", exam.DurationMinutes] · @L["{0} questions", exam.QuestionCount]
+                                @if (exam.LatestScore.HasValue)
+                                {
+                                    <text> · @L["Score"] @exam.LatestScore/100</text>
+                                }
+                            </span>
+                        </span>
+                        @switch (exam.State)
+                        {
+                            case ExamCardState.InProgress:
+                                <a class="btn btn-itg btn-itg--pill btn-sm" asp-controller="Exams" asp-action="Take" asp-route-id="@exam.InProgressAttemptId">@L["Continue exam"]</a>
+                                break;
+                            case ExamCardState.Completed:
+                            case ExamCardState.Failed:
+                                <a class="btn btn-itg-outline btn-itg--pill btn-sm" asp-controller="Exams" asp-action="Result" asp-route-id="@exam.LatestAttemptId">@L["View result"]</a>
+                                break;
+                            default:
+                                <a class="btn btn-itg btn-itg--pill btn-sm" asp-controller="Exams" asp-action="Index" asp-fragment="exam-@exam.ExamId">@L["Start exam"]</a>
+                                break;
+                        }
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+}

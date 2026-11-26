@@ -1,0 +1,22 @@
+﻿@using Microsoft.AspNetCore.Identity
+@inject UserManager<Employee> UserManager
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    var currentUser = await UserManager.GetUserAsync(User);
+
+    if (User.IsInRole(AppRoles.Admin))
+    {
+        <a class="btn btn-pref" asp-area="Admin" asp-controller="Dashboard" asp-action="Index">
+            <i class="bi bi-speedometer2" aria-hidden="true"></i> @L["Admin Panel"]
+        </a>
+    }
+
+    <span class="navbar-text">@L["Hello, {0}", currentUser?.Name ?? ""]</span>
+
+    <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+        <button type="submit" class="btn btn-pref">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i> @L["Logout"]
+        </button>
+    </form>
+}

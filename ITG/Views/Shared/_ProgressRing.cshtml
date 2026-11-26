@@ -1,0 +1,25 @@
+@model int
+@* Circular progress (0-100). The ring fills up when the page opens (theme.css). *@
+@{
+    var percent = Math.Clamp(Model, 0, 100);
+    const double circumference = 327; // 2 x pi x 52 (the circle radius)
+    var offset = (circumference * (100 - percent) / 100).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+}
+
+<div class="progress-ring" role="progressbar" aria-label="@L["Career Progress"]"
+     aria-valuenow="@percent" aria-valuemin="0" aria-valuemax="100">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+        <defs>
+            <linearGradient id="ringGradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#4aa1ea" />
+                <stop offset="100%" stop-color="#1e73be" />
+            </linearGradient>
+        </defs>
+        <circle class="progress-ring-track" cx="60" cy="60" r="52" />
+        <circle class="progress-ring-value" cx="60" cy="60" r="52" style="stroke-dashoffset: @offset" />
+    </svg>
+    <div class="progress-ring-label">
+        <strong data-countup>@percent%</strong>
+        <span>@L["Completed"]</span>
+    </div>
+</div>

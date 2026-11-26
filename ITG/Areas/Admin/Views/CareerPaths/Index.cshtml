@@ -1,0 +1,200 @@
+@model IReadOnlyList<CareerPathListItem>
+@{
+    ViewData["Title"] = L["Career Paths"].Value;
+}
+
+<partial name="_ManageTabs" />
+
+<div class="table-toolbar table-toolbar--plain">
+    <div class="table-heading">
+        <h3>@L["Career Paths"]</h3>
+        <span>@L["{0} items", Model.Count]</span>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-itg-outline btn-itg--pill" data-bs-toggle="modal" data-bs-target="#positionModal"
+                data-modal-title="@L["Add Position"]">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> @L["Add Position"]
+        </button>
+        <button type="button" class="btn btn-itg btn-itg--pill" data-bs-toggle="modal" data-bs-target="#pathModal"
+                data-modal-title="@L["Add Career Path"]">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> @L["Add Career Path"]
+        </button>
+    </div>
+</div>
+
+<div class="d-flex flex-column gap-4">
+    @foreach (var path in Model)
+    {
+        <section class="surface surface--solid path-card">
+            <div class="path-card-head">
+                <div>
+                    <h3 class="path-card-title">
+                        @path.Name
+                        @if (path.ParentName != null)
+                        {
+                            <span class="tag tag--info"><i class="bi bi-diagram-2" aria-hidden="true"></i> @L["Branch of {0}", path.ParentName]</span>
+                        }
+                        <partial name="_ActiveBadge" model="path.IsActive" />
+                    </h3>
+                    @if (!string.IsNullOrEmpty(path.Description))
+                    {
+                        <p class="path-card-text">@path.Description</p>
+                    }
+                </div>
+                <div class="review-actions">
+                    <button type="button" class="icon-action" title="@L["Edit"]" aria-label="@L["Edit"]"
+                            data-bs-toggle="modal" data-bs-target="#pathModal" data-modal-title="@L["Edit Career Path"]"
+                            data-fill='@Json.Serialize(new { path.Id, path.Name, path.Description, path.ParentCareerPathId, path.IsActive })'>
+                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                    </button>
+                    <form asp-action="DeletePath" asp-route-id="@path.Id" method="post" class="m-0"
+                          data-confirm="@L["Delete {0}?", path.Name]">
+                        <button type="submit" class="icon-action icon-action--danger" title="@L["Delete"]" aria-label="@L["Delete"]">
+                            <i class="bi bi-trash" aria-hidden="true"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            @if (path.Positions.Count == 0)
+            {
+                <p class="panel-empty">@L["No positions in this path yet."]</p>
+            }
+            else
+            {
+                <ol class="level-list">
+                    @foreach (var position in path.Positions)
+                    {
+                        <li class="level-item @(position.IsActive ? "" : "is-inactive")">
+                            <span class="level-badge">@L["Level {0}", position.Level]</span>
+                            <div class="level-body">
+                                <span class="person-name">
+                                    @position.Title
+                                    @if (position.IsFork)
+                                    {
+                                        <span class="tag tag--info"><i class="bi bi-signpost-2" aria-hidden="true"></i> @L["Path decision point"]</span>
+                                    }
+                                </span>
+                                <span class="person-id">
+                                    @L["{0} Employees", position.EmployeeCount] · @L["{0} certificates", position.CertificateCount]
+                                </span>
+                            </div>
+                            <div class="review-actions">
+                                <a class="icon-action" asp-controller="Roadmaps" asp-action="Index" asp-route-positionId="@position.Id"
+                                   title="@L["Edit Roadmap"]" aria-label="@L["Edit Roadmap"]">
+                                    <i class="bi bi-signpost-split" aria-hidden="true"></i>
+                                </a>
+                                <button type="button" class="icon-action" title="@L["Edit"]" aria-label="@L["Edit"]"
+                                        data-bs-toggle="modal" data-bs-target="#positionModal" data-modal-title="@L["Edit Position"]"
+                                        data-fill='@Json.Serialize(new { position.Id, position.Title, position.Level, position.CareerPathId, position.Description, position.IsFork, position.IsActive })'>
+                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                </button>
+                                <form asp-action="DeletePosition" asp-route-id="@position.Id" method="post" class="m-0"
+                                      data-confirm="@L["Delete {0}?", position.Title]">
+                                    <button type="submit" class="icon-action icon-action--danger" title="@L["Delete"]" aria-label="@L["Delete"]">
+                                        <i class="bi bi-trash" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </li>
+                    }
+                </ol>
+            }
+        </section>
+    }
+</div>
+
+@* ---------- Path dialog ---------- *@
+<div class="modal fade" id="pathModal" tabindex="-1" aria-labelledby="pathModalLabel" aria-hidden="true" data-entity-modal>
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content itg-modal" asp-action="SavePath" method="post">
+            <div class="modal-header">
+                <h2 class="modal-title" id="pathModalLabel">@L["Add Career Path"]</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@L["Close"]"></button>
+            </div>
+            <div class="modal-body form-stack">
+                <input type="hidden" name="Id" value="0" />
+                <label class="form-field">
+                    <span class="itg-label">@L["Name"]</span>
+                    <input type="text" name="Name" class="form-control itg-input" maxlength="100" required />
+                </label>
+                <label class="form-field">
+                    <span class="itg-label">@L["Branches from (optional)"]</span>
+                    <select name="ParentCareerPathId" class="form-select itg-input">
+                        <option value="">@L["None (main path)"]</option>
+                        @foreach (var option in Model)
+                        {
+                            <option value="@option.Id">@option.Name</option>
+                        }
+                    </select>
+                </label>
+                <label class="form-field">
+                    <span class="itg-label">@L["Description"]</span>
+                    <textarea name="Description" class="form-control itg-textarea" rows="3" maxlength="500"></textarea>
+                </label>
+                <label class="form-check-row">
+                    <input type="checkbox" name="IsActive" value="true" class="form-check-input" checked />
+                    <input type="hidden" name="IsActive" value="false" />
+                    <span>@L["Active"]</span>
+                </label>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-itg-outline" data-bs-dismiss="modal">@L["Cancel"]</button>
+                <button type="submit" class="btn btn-itg">@L["Save"]</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* ---------- Position dialog ---------- *@
+<div class="modal fade" id="positionModal" tabindex="-1" aria-labelledby="positionModalLabel" aria-hidden="true" data-entity-modal>
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content itg-modal" asp-action="SavePosition" method="post">
+            <div class="modal-header">
+                <h2 class="modal-title" id="positionModalLabel">@L["Add Position"]</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@L["Close"]"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="Id" value="0" />
+                <div class="row g-3">
+                    <label class="form-field col-md-8">
+                        <span class="itg-label">@L["Title"]</span>
+                        <input type="text" name="Title" class="form-control itg-input" maxlength="100" required />
+                    </label>
+                    <label class="form-field col-md-4">
+                        <span class="itg-label">@L["Level"]</span>
+                        <input type="number" name="Level" class="form-control itg-input" min="1" max="20" value="1" required />
+                    </label>
+                    <label class="form-field col-12">
+                        <span class="itg-label">@L["Career Path"]</span>
+                        <select name="CareerPathId" class="form-select itg-input" required>
+                            <option value="">@L["Choose a career path"]</option>
+                            @foreach (var option in Model)
+                            {
+                                <option value="@option.Id">@option.Name</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="form-field col-12">
+                        <span class="itg-label">@L["Description"]</span>
+                        <textarea name="Description" class="form-control itg-textarea" rows="2" maxlength="500"></textarea>
+                    </label>
+                    <label class="form-check-row col-12">
+                        <input type="checkbox" name="IsFork" value="true" class="form-check-input" />
+                        <input type="hidden" name="IsFork" value="false" />
+                        <span>@L["Decision point: HR sets the next career path after this position"]</span>
+                    </label>
+                    <label class="form-check-row col-12">
+                        <input type="checkbox" name="IsActive" value="true" class="form-check-input" checked />
+                        <input type="hidden" name="IsActive" value="false" />
+                        <span>@L["Active"]</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-itg-outline" data-bs-dismiss="modal">@L["Cancel"]</button>
+                <button type="submit" class="btn btn-itg">@L["Save"]</button>
+            </div>
+        </form>
+    </div>
+</div>

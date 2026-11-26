@@ -1,0 +1,51 @@
+@* Upload dialog. The certificate id and title are filled by site.js when it opens. *@
+@{
+    var maxBytes = AppConstants.MaxCertificateFileBytes;
+    var allowed = string.Join(",", AppConstants.AllowedCertificateExtensions);
+}
+
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content itg-modal" asp-controller="Roadmap" asp-action="Upload" method="post"
+              enctype="multipart/form-data" data-upload-form
+              data-max-bytes="@maxBytes" data-allowed="@allowed"
+              data-msg-required="@L["Please choose a file to upload."]"
+              data-msg-size="@L["The file is too large. The maximum size is 5 MB."]"
+              data-msg-type="@L["Only PDF, PNG or JPG files are allowed."]">
+
+            <div class="modal-header">
+                <h2 class="modal-title" id="uploadModalLabel">@L["Upload Certificate"]</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@L["Close"]"></button>
+            </div>
+
+            <div class="modal-body">
+                <input type="hidden" name="CertificateId" data-upload-cert-id />
+                <p class="upload-cert-name" data-upload-cert-title></p>
+
+                <label class="dropzone" for="uploadFile">
+                    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                    <span class="dropzone-title">@L["Choose a file"]</span>
+                    <span class="dropzone-hint">@L["PDF, PNG or JPG - up to 5 MB"]</span>
+                    <span class="dropzone-file" data-upload-file-name></span>
+                </label>
+                <input type="file" id="uploadFile" name="File" class="visually-hidden" accept="@allowed" data-upload-file />
+                <p class="upload-error" data-upload-error role="alert"></p>
+
+                <label for="uploadIssuedOn" class="form-label itg-label">@L["Issue date (optional)"]</label>
+                <input type="date" id="uploadIssuedOn" name="IssuedOn" class="form-control itg-input" data-max-today />
+
+                <p class="upload-help">
+                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    @L["Your certificate will be reviewed by HR before it counts toward your progress."]
+                </p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-itg-outline" data-bs-dismiss="modal">@L["Cancel"]</button>
+                <button type="submit" class="btn btn-itg">
+                    <i class="bi bi-upload" aria-hidden="true"></i> @L["Upload"]
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

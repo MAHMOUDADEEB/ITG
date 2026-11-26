@@ -1,0 +1,22 @@
+﻿@{
+    var isArabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    var targetCulture = isArabic ? AppCultures.English : AppCultures.Arabic;
+    var returnUrl = $"{Context.Request.PathBase}{Context.Request.Path}{Context.Request.QueryString}";
+}
+
+<div class="pref-toggles">
+    <form asp-area="" asp-controller="Language" asp-action="Set" method="post" class="m-0">
+        <input type="hidden" name="culture" value="@targetCulture" />
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+        <button type="submit" class="btn btn-pref" lang="@(isArabic ? "en" : "ar")">
+            <i class="bi bi-translate" aria-hidden="true"></i>
+            <span>@(isArabic ? "English" : "العربية")</span>
+        </button>
+    </form>
+
+    <button type="button" class="btn btn-pref btn-pref-icon" data-theme-toggle
+            aria-label="@L["Switch theme"]" title="@L["Switch theme"]">
+        <i class="bi bi-moon-stars-fill icon-moon" aria-hidden="true"></i>
+        <i class="bi bi-sun-fill icon-sun" aria-hidden="true"></i>
+    </button>
+</div>

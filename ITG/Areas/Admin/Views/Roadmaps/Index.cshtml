@@ -1,0 +1,102 @@
+@model RoadmapManageViewModel
+@{
+    ViewData["Title"] = L["Roadmaps"].Value;
+    var selectedTitle = Model.Positions.FirstOrDefault(p => p.Id == Model.PositionId)?.Text;
+}
+
+<partial name="_ManageTabs" />
+
+<section class="surface surface--solid table-card">
+    <div class="table-toolbar">
+        <div class="table-heading">
+            <h3>@L["Roadmaps"]</h3>
+            <span>@L["Certificates required to reach each position, in order."]</span>
+        </div>
+        <form method="get" class="m-0">
+            <label class="filter-field">
+                <span>@L["Position"]</span>
+                <select name="positionId" class="form-select filter-select filter-select--wide" data-auto-submit data-searchable>
+                    @foreach (var position in Model.Positions)
+                    {
+                        <option value="@position.Id" selected="@(position.Id == Model.PositionId)">@position.Text</option>
+                    }
+                </select>
+            </label>
+        </form>
+    </div>
+
+    @if (Model.PositionId == null)
+    {
+        <p class="panel-empty">@L["Add a position first."]</p>
+    }
+    else
+    {
+        <h4 class="roadmap-edit-title">@L["Roadmap to {0}", selectedTitle ?? ""]</h4>
+
+        if (Model.Items.Count == 0)
+        {
+            <p class="panel-empty">@L["No certificates in this roadmap yet."]</p>
+        }
+        else
+        {
+            <ol class="order-list">
+                @for (var i = 0; i < Model.Items.Count; i++)
+                {
+                    var item = Model.Items[i];
+                    <li class="order-item">
+                        <span class="order-number">@(i + 1)</span>
+                        <div class="order-body">
+                            <span class="person-name">@item.Title</span>
+                            <span class="tag">@L[item.Category]</span>
+                            @if (!item.IsActive)
+                            {
+                                <partial name="_ActiveBadge" model="false" />
+                            }
+                        </div>
+                        <div class="review-actions">
+                            <form asp-action="Move" method="post" class="m-0">
+                                <input type="hidden" name="PositionId" value="@Model.PositionId" />
+                                <input type="hidden" name="CertificateId" value="@item.CertificateId" />
+                                <input type="hidden" name="direction" value="-1" />
+                                <button type="submit" class="icon-action" title="@L["Move up"]" aria-label="@L["Move up"]" disabled="@(i == 0)">
+                                    <i class="bi bi-arrow-up" aria-hidden="true"></i>
+                                </button>
+                            </form>
+                            <form asp-action="Move" method="post" class="m-0">
+                                <input type="hidden" name="PositionId" value="@Model.PositionId" />
+                                <input type="hidden" name="CertificateId" value="@item.CertificateId" />
+                                <input type="hidden" name="direction" value="1" />
+                                <button type="submit" class="icon-action" title="@L["Move down"]" aria-label="@L["Move down"]" disabled="@(i == Model.Items.Count - 1)">
+                                    <i class="bi bi-arrow-down" aria-hidden="true"></i>
+                                </button>
+                            </form>
+                            <form asp-action="Remove" method="post" class="m-0" data-confirm="@L["Remove {0} from this roadmap?", item.Title]">
+                                <input type="hidden" name="PositionId" value="@Model.PositionId" />
+                                <input type="hidden" name="CertificateId" value="@item.CertificateId" />
+                                <button type="submit" class="icon-action icon-action--danger" title="@L["Remove"]" aria-label="@L["Remove"]">
+                                    <i class="bi bi-trash" aria-hidden="true"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </li>
+                }
+            </ol>
+        }
+
+        <form asp-action="Add" method="post" class="add-row">
+            <input type="hidden" name="PositionId" value="@Model.PositionId" />
+            <label class="visually-hidden" for="addCertificate">@L["Certificate"]</label>
+            <select id="addCertificate" name="CertificateId" class="form-select itg-input" required data-searchable
+                    data-placeholder="@L["Search certificates"]">
+                <option value="">@L["Choose a certificate to add"]</option>
+                @foreach (var certificate in Model.AvailableCertificates)
+                {
+                    <option value="@certificate.Id">@certificate.Text</option>
+                }
+            </select>
+            <button type="submit" class="btn btn-itg">
+                <i class="bi bi-plus-lg" aria-hidden="true"></i> @L["Add to Roadmap"]
+            </button>
+        </form>
+    }
+</section>

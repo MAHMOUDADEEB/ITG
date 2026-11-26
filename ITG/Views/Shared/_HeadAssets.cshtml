@@ -1,0 +1,42 @@
+@{
+    var isRtl = CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft;
+}
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>@ViewData["Title"] - ITG</title>
+
+@* Applies the saved theme before the page paints (prevents a white flash) *@
+<script>
+    (function () {
+        try {
+            var theme = localStorage.getItem('itg-theme');
+            if (!theme) {
+                theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-bs-theme', theme);
+
+            // Sidebar shrunk to icons (remembered per browser)
+            if (localStorage.getItem('itg-sidebar') === 'mini') {
+                document.documentElement.setAttribute('data-sidebar', 'mini');
+            }
+        } catch (e) {
+            document.documentElement.setAttribute('data-bs-theme', 'light');
+        }
+    })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Open+Sans:wght@400;600;700&display=swap" />
+
+@if (isRtl)
+{
+    <link rel="stylesheet" href="~/lib/bootstrap-5.3.8/css/bootstrap.rtl.min.css" />
+}
+else
+{
+    <link rel="stylesheet" href="~/lib/bootstrap-5.3.8/css/bootstrap.min.css" />
+}
+
+<link rel="stylesheet" href="~/lib/bootstrap-icons-1.13.2/bootstrap-icons.min.css" />
+<link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />

@@ -1,0 +1,138 @@
+@model PlanView
+@{
+    ViewData["Title"] = L["My Plan"].Value;
+    var isArabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+}
+
+<partial name="_LoadingOverlay" />
+
+<header class="page-header">
+    <h2 class="page-title">@L["My Development Plan"]</h2>
+    <p class="page-subtitle">@L["A personal 4-week plan written by AI for your next role."]</p>
+</header>
+
+@if (Model == null)
+{
+    @* ---------- No plan yet ---------- *@
+    <section class="surface surface--tinted plan-intro">
+        <span class="plan-intro-icon"><i class="bi bi-stars" aria-hidden="true"></i></span>
+        <h3>@L["Get your personal development plan"]</h3>
+        <p>@L["The AI reviews your roadmap, exam results and soft skills, then builds a clear 4-week plan for your next role."]</p>
+
+        <ul class="plan-intro-points">
+            <li><i class="bi bi-patch-check" aria-hidden="true"></i> @L["Which certificate to work on first"]</li>
+            <li><i class="bi bi-card-checklist" aria-hidden="true"></i> @L["Which exams to practise"]</li>
+            <li><i class="bi bi-people" aria-hidden="true"></i> @L["How to grow your weakest skill"]</li>
+        </ul>
+
+        <form asp-action="Generate" method="post" class="m-0" data-loading="@L["Writing your plan with AI..."]">
+            <button type="submit" class="btn btn-itg btn-itg--pill btn-itg--lg">
+                <i class="bi bi-stars" aria-hidden="true"></i> @L["Create my plan"]
+            </button>
+        </form>
+    </section>
+}
+else
+{
+    var plan = Model;
+    var planIsArabic = plan.Language == "ar";
+
+    @* ---------- Summary ---------- *@
+    <section class="surface surface--tinted plan-summary" aria-labelledby="planSummaryTitle">
+        <div class="plan-summary-main">
+            <div class="plan-summary-head">
+                <h3 id="planSummaryTitle"><i class="bi bi-stars" aria-hidden="true"></i> @L["Your plan"]</h3>
+                <span class="plan-date">@L["Created on {0}", plan.CreatedAt.ToLocalFromUtc().ToString("d MMM yyyy")]</span>
+            </div>
+            <p class="plan-summary-text">@plan.Content.Summary</p>
+
+            @if (plan.Content.Focus.Count > 0)
+            {
+                <div class="plan-focus">
+                    @foreach (var focus in plan.Content.Focus)
+                    {
+                        <div class="plan-focus-item">
+                            <strong><i class="bi bi-bullseye" aria-hidden="true"></i> @focus.Title</strong>
+                            <span>@focus.Reason</span>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (planIsArabic != isArabic)
+            {
+                <p class="plan-language-note">
+                    <i class="bi bi-translate" aria-hidden="true"></i>
+                    <span>@L["This plan was written in another language. Create a new plan to get it in the current language."]</span>
+                </p>
+            }
+        </div>
+
+        <div class="plan-summary-side">
+            <div class="plan-progress" data-plan-progress>
+                <div class="progress-meta">
+                    <span class="fw-semibold" data-plan-count>@L["{0} of {1} tasks done", plan.DoneTasks, plan.TotalTasks]</span>
+                    <span class="progress-percent" data-plan-percent>@plan.Percent%</span>
+                </div>
+                <div class="meter meter--lg" role="progressbar" aria-label="@L["Plan progress"]"
+                     aria-valuenow="@plan.Percent" aria-valuemin="0" aria-valuemax="100">
+                    <div class="meter-fill" data-plan-fill style="width: @plan.Percent%"></div>
+                </div>
+            </div>
+
+            <form asp-action="Generate" method="post" class="m-0"
+                  data-confirm="@L["Create a new plan? The current plan and its ticks will be replaced."]"
+                  data-loading="@L["Writing your plan with AI..."]">
+                <button type="submit" class="btn btn-itg-outline btn-itg--pill w-100">
+                    <i class="bi bi-arrow-repeat" aria-hidden="true"></i> @L["Create a new plan"]
+                </button>
+            </form>
+        </div>
+    </section>
+
+    @* ---------- Weeks ---------- *@
+    <form id="planTaskForm" class="d-none" data-plan-id="@plan.Id"
+          data-count-text="@L["{0} of {1} tasks done", "{0}", "{1}"]"
+          data-url="@Url.Action("ToggleTask")">
+        @Html.AntiForgeryToken()
+    </form>
+
+    <div class="plan-weeks">
+        @for (var w = 0; w < plan.Content.Weeks.Count; w++)
+        {
+            var week = plan.Content.Weeks[w];
+            var weekNumber = w + 1;
+            var isCurrent = weekNumber == plan.CurrentWeek;
+            var weekDone = week.Tasks.Count > 0 && week.Tasks.All(t => t.Done);
+
+            <section class="surface plan-week @(isCurrent ? "plan-week--current" : "") @(weekDone ? "plan-week--done" : "")"
+                     aria-labelledby="week@(weekNumber)Title">
+                <header class="plan-week-head">
+                    <span class="plan-week-number">@L["Week {0}", weekNumber]</span>
+                    @* Both pills are always there; CSS shows the right one (the page updates without reloading) *@
+                    <span class="status-pill status-pill--success plan-week-done-pill"><i class="bi bi-check-lg" aria-hidden="true"></i> @L["Done"]</span>
+                    @if (isCurrent)
+                    {
+                        <span class="status-pill status-pill--warning plan-week-now-pill">@L["This week"]</span>
+                    }
+                </header>
+                <h3 class="plan-week-title" id="week@(weekNumber)Title">@week.Title</h3>
+
+                <ul class="plan-tasks">
+                    @for (var t = 0; t < week.Tasks.Count; t++)
+                    {
+                        var task = week.Tasks[t];
+                        <li>
+                            <label class="plan-task">
+                                <input type="checkbox" class="form-check-input" data-plan-task
+                                       data-week="@w" data-task="@t" checked="@task.Done" />
+                                <partial name="_PlanTaskIcon" model="task.Type" />
+                                <span class="plan-task-text">@task.Text</span>
+                            </label>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+    </div>
+}

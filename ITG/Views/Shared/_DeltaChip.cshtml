@@ -1,0 +1,10 @@
+@model int
+@* Change between two assessments: green up, red down, gray when equal *@
+@{
+    var (kind, icon) = Model > 0 ? ("up", "bi-arrow-up") : Model < 0 ? ("down", "bi-arrow-down") : ("same", "bi-dash");
+    var text = Model > 0 ? "+" + Model : Model.ToString();
+}
+<span class="delta-chip delta-chip--@kind" title="@L["Change since the previous assessment"]">
+    <i class="bi @icon" aria-hidden="true"></i><span dir="ltr">@text</span>
+    <span class="visually-hidden">@L["Change since the previous assessment"]</span>
+</span>

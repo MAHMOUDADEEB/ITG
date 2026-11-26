@@ -1,0 +1,39 @@
+@* Admin pages: top bar only (no sidebar), as in the Admin Dashboard design *@
+@{
+    var isRtl = CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft;
+}
+<!DOCTYPE html>
+<html lang="@CultureInfo.CurrentUICulture.TwoLetterISOLanguageName" dir="@(isRtl ? "rtl" : "ltr")">
+<head>
+    <partial name="_HeadAssets" />
+    <link rel="stylesheet" href="~/lib/tom-select-2.6.2/tom-select.bootstrap5.min.css" />
+    <link rel="stylesheet" href="~/css/theme.css" asp-append-version="true" />
+</head>
+<body class="app-body admin-body" data-text-ok="@L["Yes, continue"]" data-text-alert="@L["OK"]" data-text-cancel="@L["Cancel"]" data-text-no-results="@L["No results found"]" data-text-search="@L["Search"]"
+      data-chart-src="@Url.Content("~/lib/chart.js-4.6.1/chart.umd.min.js")">
+
+    <header class="app-topbar admin-topbar">
+        <div class="app-topbar-start admin-topbar-start">
+            <a class="app-brand" asp-area="Admin" asp-controller="Dashboard" asp-action="Index" aria-label="ITG">
+                <img src="~/images/itg-logo.png" alt="ITG" width="70" height="70" />
+            </a>
+            <span class="app-page-title">@L["Admin Dashboard"]</span>
+        </div>
+
+        <partial name="_TopbarActions" />
+    </header>
+
+    <main class="admin-main">
+        <div class="admin-content">
+            <partial name="_StatusMessages" />
+            @RenderBody()
+        </div>
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap-5.3.8/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/tom-select-2.6.2/tom-select.complete.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

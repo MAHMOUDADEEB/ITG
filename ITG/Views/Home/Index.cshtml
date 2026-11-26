@@ -1,0 +1,126 @@
+@model HomeViewModel
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<Employee> UserManager
+@{
+    ViewData["Title"] = L["Home"].Value;
+    ViewData["HideSearch"] = true;
+    var assessment = Model.LatestAssessment;
+
+    // First name for the greeting ("Omar Haddad" -> "Omar")
+    var currentUser = await UserManager.GetUserAsync(User);
+    var firstName = (currentUser?.Name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+}
+<header class="page-header">
+    <span class="greeting-date">
+        <i class="bi bi-calendar3" aria-hidden="true"></i>
+        @DateTime.Now.ToString("dddd, d MMMM yyyy")
+    </span>
+    <h2 class="page-title">
+        @L["Welcome back, {0}", firstName] <span class="greeting-wave" aria-hidden="true">👋</span>
+    </h2>
+    <p class="page-subtitle">@L["Build Your Next Career Step."]</p>
+</header>
+
+@* ---------- Career goal ---------- *@
+<section class="surface surface--tinted goal-card" aria-labelledby="goalTitle">
+    <div class="goal-card-head">
+        <h3 class="goal-card-title" id="goalTitle">@L["Your Career Goal"]</h3>
+    </div>
+
+    <partial name="_RoleTransition" model="Model.Progress" />
+</section>
+
+<div class="row g-4 mt-1">
+
+    @* ---------- Promotion readiness ---------- *@
+    <div class="col-lg-6">
+        <partial name="_PromotionReadiness" model="Model.Readiness" />
+    </div>
+
+    @* ---------- AI development plan ---------- *@
+    <div class="col-lg-6">
+        <partial name="_PlanHomeCard" model="Model.Plan" />
+    </div>
+
+</div>
+
+<div class="row g-4 mt-1">
+
+    @* ---------- AI evaluation / assessment ---------- *@
+    <div class="col-lg-6">
+        @if (assessment == null)
+        {
+            <section class="surface feature-card h-100" aria-labelledby="assessTitle">
+                <div class="feature-card-head">
+                    <span class="feature-icon"><i class="bi bi-clipboard-check" aria-hidden="true"></i></span>
+                    <h3 class="feature-card-title" id="assessTitle">@L["Assess Your Skills"]</h3>
+                </div>
+                <p class="feature-text">@L["Find The Skills To Develop For Your Target Role."]</p>
+                <a class="btn btn-itg btn-itg--lg w-100" asp-controller="SkillsAssessment" asp-action="Index">
+                    @L["Start AI Assessment"]
+                </a>
+                <p class="feature-note">@L["Your Results Will Guide Your Learning Path."]</p>
+            </section>
+        }
+        else
+        {
+            <section class="surface feature-card h-100" aria-labelledby="evalTitle">
+                <div class="feature-card-head">
+                    <i class="bi bi-stars feature-spark" aria-hidden="true"></i>
+                    <h3 class="feature-card-title" id="evalTitle">@L["AI Evaluation"]</h3>
+                </div>
+
+                <partial name="_SkillEvaluation" model="new SkillComparison(assessment, Model.PreviousAssessment)" />
+
+                @if (Model.CanTakeAssessment)
+                {
+                    <div class="feature-card-footer">
+                        <span class="feature-note m-0">@L["HR has re-opened your assessment."]</span>
+                        <a class="btn btn-itg btn-sm" asp-controller="SkillsAssessment" asp-action="Index">
+                            @L["Retake Assessment"]
+                        </a>
+                    </div>
+                }
+            </section>
+        }
+    </div>
+
+    @* ---------- Roadmap ---------- *@
+    <div class="col-lg-6">
+        <section class="surface feature-card h-100" aria-labelledby="roadmapTitle">
+            <div class="feature-card-head">
+                <span class="feature-icon"><i class="bi bi-signpost-split" aria-hidden="true"></i></span>
+                <h3 class="feature-card-title" id="roadmapTitle">@L["Roadmap"]</h3>
+            </div>
+            <div class="inset-box">
+                <p class="inset-box-text">@L["Follow a personalized learning path to reach your target role step by step."]</p>
+                @if (Model.Progress.HasTarget)
+                {
+                    <div class="mini-progress">
+                        <span>@L["{0} of {1} requirements completed", Model.Progress.CompletedCount, Model.Progress.TotalCount]</span>
+                        <span class="mini-progress-value">@Model.Progress.Percent%</span>
+                    </div>
+                    <div class="meter" role="progressbar" aria-label="@L["Career Progress"]"
+                         aria-valuenow="@Model.Progress.Percent" aria-valuemin="0" aria-valuemax="100">
+                        <div class="meter-fill" style="width: @Model.Progress.Percent%"></div>
+                    </div>
+
+                    if (Model.Progress.NextStep != null)
+                    {
+                        <div class="next-cert">
+                            <span class="next-cert-icon"><i class="bi bi-flag" aria-hidden="true"></i></span>
+                            <span class="next-cert-body">
+                                <span class="next-cert-label">@L["Next Step"]</span>
+                                <span class="next-cert-title">@Model.Progress.NextStep.Title</span>
+                            </span>
+                        </div>
+                    }
+                }
+                <a class="link-arrow" asp-controller="Roadmap" asp-action="Index">
+                    @L["View Roadmap"] <i class="bi bi-chevron-right flip-rtl" aria-hidden="true"></i>
+                </a>
+            </div>
+        </section>
+    </div>
+
+</div>

@@ -1,0 +1,274 @@
+@model EmployeeDetailsViewModel
+@{
+    ViewData["Title"] = Model.Name;
+    ViewData["ReadOnly"] = true;
+    var progress = Model.Progress;
+}
+
+<a class="back-link" asp-controller="Dashboard" asp-action="Index">
+    <i class="bi bi-arrow-left flip-rtl" aria-hidden="true"></i> @L["Back to Dashboard"]
+</a>
+
+@* ---------- Profile ---------- *@
+<section class="surface surface--solid profile-card">
+    <div class="profile-main">
+        <span class="avatar avatar--lg avatar--1" aria-hidden="true">@Model.Initials</span>
+        <div>
+            <h2 class="profile-name">@Model.Name</h2>
+            <div class="profile-meta">
+                <span><i class="bi bi-person-badge" aria-hidden="true"></i> @Model.EmployeeNumber</span>
+                <span><i class="bi bi-building" aria-hidden="true"></i> @(Model.DepartmentName ?? "—")</span>
+                <span dir="ltr"><i class="bi bi-envelope" aria-hidden="true"></i> @Model.Email</span>
+            </div>
+        </div>
+    </div>
+    <div class="profile-actions">
+        <partial name="_CareerStatusPill" model="progress.Status" />
+        @if (progress.IsReadyForPromotion)
+        {
+            <form asp-action="Promote" asp-route-id="@Model.Id" method="post" class="m-0"
+                  data-confirm="@L["Promote {0} to {1}?", Model.Name, progress.TargetPositionTitle ?? ""]">
+                <button type="submit" class="btn btn-itg btn-itg--pill">
+                    <i class="bi bi-award" aria-hidden="true"></i>
+                    @L["Promote to {0}", progress.TargetPositionTitle ?? ""]
+                </button>
+            </form>
+        }
+    </div>
+</section>
+
+@* ---------- Career progress + promotion readiness ---------- *@
+<div class="row g-4 mt-1">
+    <div class="col-xl-7">
+        <section class="surface surface--tinted progress-card h-100" aria-labelledby="progressTitle">
+            <h3 class="progress-card-title" id="progressTitle">@L["Career Progress"]</h3>
+            <partial name="_RoleTransition" model="progress" />
+            @if (progress.HasTarget)
+            {
+                <partial name="_ProgressMeter" model="progress" />
+            }
+        </section>
+    </div>
+    <div class="col-xl-5">
+        <partial name="_PromotionReadiness" model="Model.Readiness" />
+    </div>
+</div>
+
+@* ---------- Fork: HR decides the next path ---------- *@
+@if (progress.IsAtFork)
+{
+    var opened = progress.PathOptions.Select(o => o.CareerPathId).ToHashSet();
+    var chosenPath = progress.AllPathOptions.FirstOrDefault(o => o.CareerPathId == progress.SelectedCareerPathId);
+
+    <section class="surface surface--solid panel mt-4 fork-panel" aria-labelledby="forkTitle">
+        <h3 class="panel-title" id="forkTitle"><i class="bi bi-signpost-split" aria-hidden="true"></i> @L["Next Career Path"]</h3>
+
+        <p class="fork-state">
+            @if (progress.HasTarget)
+            {
+                <span><i class="bi bi-lock-fill" aria-hidden="true"></i> @(L["Current path: {0}. Only HR can change it.", $"{progress.TargetPositionTitle} · {chosenPath?.PathName}"])</span>
+            }
+            else if (progress.CanChoosePath)
+            {
+                <span><i class="bi bi-hourglass-split" aria-hidden="true"></i> @L["Paths opened. Waiting for the employee to choose."]</span>
+            }
+            else
+            {
+                <span><i class="bi bi-exclamation-circle" aria-hidden="true"></i> @L["The employee has completed the current career stage and needs a decision on the next career path."]</span>
+            }
+        </p>
+
+        <form asp-action="SetCareerPath" asp-route-id="@Model.Id" method="post" class="fork-form">
+            <p class="fork-help">@L["Choose one path to assign it, or several paths to let the employee choose."]</p>
+            <div class="fork-options">
+                @foreach (var option in progress.AllPathOptions)
+                {
+                    var isChecked = option.CareerPathId == progress.SelectedCareerPathId || opened.Contains(option.CareerPathId);
+                    <label class="fork-option">
+                        <input type="checkbox" class="form-check-input" name="careerPathIds" value="@option.CareerPathId" checked="@isChecked" />
+                        <span class="fork-option-text">
+                            <strong>@option.PositionTitle</strong>
+                            <small>@option.PathName</small>
+                        </span>
+                    </label>
+                }
+            </div>
+            <button type="submit" class="btn btn-itg">
+                <i class="bi bi-check2" aria-hidden="true"></i> @L["Save path decision"]
+            </button>
+        </form>
+    </section>
+}
+
+<div class="row g-4 mt-1">
+
+    @* ---------- Roadmap + uploads ---------- *@
+    <div class="col-xl-7">
+        <section class="surface surface--solid panel h-100" aria-labelledby="roadmapTitle">
+            <h3 class="panel-title" id="roadmapTitle"><i class="bi bi-signpost-split" aria-hidden="true"></i> @L["Current Roadmap"]</h3>
+
+            @if (progress.Items.Count == 0)
+            {
+                <p class="panel-empty">@L["No certificates are required right now."]</p>
+            }
+            else
+            {
+                <ul class="check-list">
+                    @foreach (var item in progress.Items)
+                    {
+                        var (css, text) = item.Status switch
+                        {
+                            RoadmapItemStatus.Verified => ("success", "Completed"),
+                            RoadmapItemStatus.Pending => ("warning", "Pending Review"),
+                            RoadmapItemStatus.Rejected => ("danger", "Rejected"),
+                            _ => ("muted", "Not Uploaded")
+                        };
+                        <li>
+                            <span class="check-list-title">@item.SortOrder. @item.Title</span>
+                            <span class="status-pill status-pill--@css">@L[text]</span>
+                        </li>
+                    }
+                </ul>
+            }
+
+            <h3 class="panel-title mt-4"><i class="bi bi-folder2-open" aria-hidden="true"></i> @L["Uploaded Certificates"]</h3>
+            @if (Model.Submissions.Count == 0)
+            {
+                <p class="panel-empty">@L["This employee has not uploaded any certificates yet."]</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="itg-table itg-table--compact">
+                        <thead>
+                            <tr>
+                                <th scope="col">@L["Certificate"]</th>
+                                <th scope="col">@L["Uploaded"]</th>
+                                <th scope="col">@L["Status"]</th>
+                                <th scope="col" class="text-center">@L["Actions"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var submission in Model.Submissions)
+                            {
+                                var (css, text) = submission.Status switch
+                                {
+                                    VerificationStatus.Verified => ("success", "Completed"),
+                                    VerificationStatus.Rejected => ("danger", "Rejected"),
+                                    _ => ("warning", "Pending Review")
+                                };
+                                <tr>
+                                    <td>
+                                        <span class="person-name">@submission.CertificateTitle</span>
+                                        @if (!string.IsNullOrEmpty(submission.RejectionReason))
+                                        {
+                                            <span class="cell-note">@submission.RejectionReason</span>
+                                        }
+                                    </td>
+                                    <td class="cell-muted">@submission.SubmittedAt.ToLocalFromUtc().ToString("d MMM yyyy")</td>
+                                    <td><span class="status-pill status-pill--@css">@L[text]</span></td>
+                                    <td>
+                                        <div class="review-actions justify-content-center">
+                                            <a class="icon-action" asp-area="" asp-controller="CertificateFiles" asp-action="Open"
+                                               asp-route-id="@submission.Id" target="_blank" rel="noopener"
+                                               title="@L["View File"]" aria-label="@L["View File"]">
+                                                <i class="bi bi-eye" aria-hidden="true"></i>
+                                            </a>
+                                            @if (submission.Status == VerificationStatus.Pending)
+                                            {
+                                                <partial name="_ReviewActions" model="new ReviewActionModel(submission.Id, submission.CertificateTitle)" />
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
+
+    @* ---------- AI evaluation, exams, promotions ---------- *@
+    <div class="col-xl-5 d-flex flex-column gap-4">
+        <section class="surface surface--solid panel" aria-labelledby="evalTitle">
+            <div class="panel-head">
+                <h3 class="panel-title m-0" id="evalTitle"><i class="bi bi-stars" aria-hidden="true"></i> @L["AI Evaluation"]</h3>
+                @if (Model.LatestAssessment != null && !Model.CanRetakeAssessment)
+                {
+                    <form asp-action="UnlockAssessment" asp-route-id="@Model.Id" method="post" class="m-0">
+                        <button type="submit" class="btn btn-itg-outline btn-sm">
+                            <i class="bi bi-unlock" aria-hidden="true"></i> @L["Re-open Assessment"]
+                        </button>
+                    </form>
+                }
+                else if (Model.CanRetakeAssessment)
+                {
+                    <span class="status-pill status-pill--info">@L["Re-opened"]</span>
+                }
+            </div>
+
+            @if (Model.LatestAssessment != null)
+            {
+                <partial name="_SkillEvaluation" model="new SkillComparison(Model.LatestAssessment, Model.PreviousAssessment)" />
+                if (!string.IsNullOrEmpty(Model.LatestAssessment.Summary))
+                {
+                    <p class="panel-note">@Model.LatestAssessment.Summary</p>
+                }
+            }
+            else
+            {
+                <p class="panel-empty">@L["The employee has not taken the skills assessment yet."]</p>
+            }
+        </section>
+
+        <section class="surface surface--solid panel" aria-labelledby="examsTitle">
+            <h3 class="panel-title" id="examsTitle"><i class="bi bi-card-checklist" aria-hidden="true"></i> @L["Exams Records"]</h3>
+            @if (Model.ExamAttempts.Count == 0)
+            {
+                <p class="panel-empty">@L["You have not taken any exams yet."]</p>
+            }
+            else
+            {
+                <ul class="simple-list">
+                    @foreach (var attempt in Model.ExamAttempts)
+                    {
+                        var passed = attempt.Score >= AppConstants.ExamPassingScore;
+                        <li>
+                            <div>
+                                <span class="person-name">@attempt.ExamTitle</span>
+                                <span class="person-id">@L["Attempt {0}", attempt.AttemptNumber]</span>
+                            </div>
+                            <div class="simple-list-end">
+                                <strong class="text-itg-primary">@attempt.Score/100</strong>
+                                <span class="status-pill status-pill--@(passed ? "success" : "danger")">@L[passed ? "Passed" : "Failed"]</span>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <section class="surface surface--solid panel" aria-labelledby="promotionsTitle">
+            <h3 class="panel-title" id="promotionsTitle"><i class="bi bi-award" aria-hidden="true"></i> @L["Promotion History"]</h3>
+            @if (Model.Promotions.Count == 0)
+            {
+                <p class="panel-empty">@L["No promotions yet."]</p>
+            }
+            else
+            {
+                <ul class="simple-list">
+                    @foreach (var promotion in Model.Promotions)
+                    {
+                        <li>
+                            <span>@(promotion.FromPosition ?? "—") <i class="bi bi-arrow-right flip-rtl mx-1" aria-hidden="true"></i> <strong>@promotion.ToPosition</strong></span>
+                            <span class="cell-muted">@promotion.PromotedAt.ToLocalFromUtc().ToString("d MMM yyyy")</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+</div>
+
+<partial name="_RejectModal" />

@@ -1,0 +1,295 @@
+@model AnalyticsViewModel
+@{
+    ViewData["Title"] = L["Analytics"].Value;
+    var data = Model.Data;
+    string ToJson(object value) => System.Text.Json.JsonSerializer.Serialize(value);
+
+    var skillNames = new[] { "Teamwork", "Problem Solving", "Communication", "Leadership" }.Select(s => L[s].Value).ToList();
+    var radarValues = data.DepartmentSkills ?? data.CompanySkills;
+
+    // Career status chart: label + color for each status
+    var statusInfo = new Dictionary<CareerStatus, (string Text, string Color)>
+    {
+        [CareerStatus.InProgress] = ("In Progress", "#1e73be"),
+        [CareerStatus.ReviewPending] = ("Review Pending", "#e9c440"),
+        [CareerStatus.ReadyForPromotion] = ("Completed", "#2e9d63"),
+        [CareerStatus.NotStarted] = ("Not Started", "#9aa3ae"),
+        [CareerStatus.AwaitingPathDecision] = ("Awaiting Path Decision", "#d9822b"),
+        [CareerStatus.ChoosingPath] = ("Choosing Path", "#4aa1ea"),
+        [CareerStatus.TopOfPath] = ("Top Level", "#7c4dbd"),
+        [CareerStatus.NoPosition] = ("No position", "#5b6472")
+    };
+    var statusLabels = data.Statuses.Select(s => L[statusInfo[s.Status].Text].Value).ToList();
+    var statusValues = data.Statuses.Select(s => s.Count).ToList();
+    var statusColors = data.Statuses.Select(s => statusInfo[s.Status].Color).ToList();
+
+    var monthLabels = data.PromotionsByMonth.Select(m => m.Month.ToString("MMM")).ToList();
+    var monthValues = data.PromotionsByMonth.Select(m => m.Count).ToList();
+
+    var kpis = new[]
+    {
+        ("bi-people", "blue", "Employees", data.EmployeeCount.ToString(), ""),
+        ("bi-rocket-takeoff", "amber", "Average readiness", data.AverageReadiness?.ToString() ?? "—", data.AverageReadiness.HasValue ? "%" : ""),
+        ("bi-stars", "blue", "Average skills score", data.AverageSkills?.ToString() ?? "—", data.AverageSkills.HasValue ? "/100" : ""),
+        ("bi-card-checklist", "green", "Exam pass rate", data.ExamPassRate?.ToString() ?? "—", data.ExamPassRate.HasValue ? "%" : ""),
+        ("bi-trophy", "amber", "Promotions (6 months)", data.PromotionsLast6Months.ToString(), "")
+    };
+}
+
+<partial name="_LoadingOverlay" />
+
+<a class="back-link" asp-controller="Dashboard" asp-action="Index">
+    <i class="bi bi-arrow-left flip-rtl" aria-hidden="true"></i> @L["Back to Dashboard"]
+</a>
+
+<div class="admin-header">
+    <div>
+        <h2 class="page-title">@L["Analytics"]</h2>
+        <p class="page-subtitle">@L["Workforce development at a glance."]</p>
+    </div>
+    <form method="get" asp-action="Index" class="m-0">
+        <label class="filter-field">
+            <span>@L["Department"]</span>
+            <select name="department" class="form-select filter-select" data-auto-submit>
+                <option value="">@L["All Departments"]</option>
+                @foreach (var department in Model.Departments)
+                {
+                    <option value="@department.Value" selected="@department.Selected">@department.Text</option>
+                }
+            </select>
+        </label>
+    </form>
+</div>
+
+@* ---------- Key numbers ---------- *@
+<div class="kpi-grid">
+    @foreach (var (icon, color, label, value, suffix) in kpis)
+    {
+        <div class="kpi-card">
+            <span class="stat-icon stat-icon--@color"><i class="bi @icon" aria-hidden="true"></i></span>
+            <div class="stat-body">
+                <span class="kpi-label">@L[label]</span>
+                <span class="kpi-value"><span data-countup>@value</span><small>@suffix</small></span>
+            </div>
+        </div>
+    }
+</div>
+
+@* ---------- AI summary ---------- *@
+<section class="surface surface--tinted insight-card" aria-labelledby="insightTitle">
+    <div class="insight-head">
+        <h3 class="panel-title m-0" id="insightTitle">
+            <i class="bi bi-stars" aria-hidden="true"></i> @L["AI Insights"]
+        </h3>
+        <form asp-action="Insight" asp-route-department="@Model.DepartmentId" method="post" class="m-0"
+              data-loading="@L["Analysing the numbers with AI..."]">
+            <button type="submit" class="btn btn-itg btn-itg--pill">
+                <i class="bi @(Model.Insight == null ? "bi-magic" : "bi-arrow-repeat")" aria-hidden="true"></i>
+                @(Model.Insight == null ? L["Generate AI summary"] : L["Refresh summary"])
+            </button>
+        </form>
+    </div>
+
+    @if (Model.Insight != null)
+    {
+        <p class="insight-headline">@Model.Insight.Headline</p>
+        <ul class="insight-points">
+            @foreach (var point in Model.Insight.Points)
+            {
+                <li><i class="bi bi-check2-circle" aria-hidden="true"></i><span>@point</span></li>
+            }
+        </ul>
+        @if (!string.IsNullOrEmpty(Model.Insight.Recommendation))
+        {
+            <div class="insight-recommendation">
+                <i class="bi bi-lightbulb" aria-hidden="true"></i>
+                <div>
+                    <strong>@L["Recommendation"]</strong>
+                    <p>@Model.Insight.Recommendation</p>
+                </div>
+            </div>
+        }
+    }
+    else if (Model.InsightError != null)
+    {
+        <p class="insight-error"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> @Model.InsightError</p>
+    }
+    else
+    {
+        <p class="insight-empty">@L["Let the AI read these numbers and write the key findings and a recommendation for HR."]</p>
+    }
+</section>
+
+<div class="row g-4 mt-1">
+    @* ---------- Soft skills ---------- *@
+    <div class="col-xl-6">
+        <section class="surface surface--solid panel h-100" aria-labelledby="skillsTitle">
+            <h3 class="panel-title" id="skillsTitle"><i class="bi bi-diagram-3" aria-hidden="true"></i> @L["Soft skills average"]</h3>
+            @if (radarValues == null)
+            {
+                <p class="panel-empty">@L["No skills assessments yet."]</p>
+            }
+            else
+            {
+                if (data.DepartmentSkills != null)
+                {
+                    <div class="eval-legend">
+                        <span class="eval-legend-item eval-legend-item--latest"><i aria-hidden="true"></i> @data.DepartmentName</span>
+                        <span class="eval-legend-item eval-legend-item--previous"><i aria-hidden="true"></i> @L["Company average"]</span>
+                    </div>
+                }
+                <div class="analytics-radar">
+                    <canvas data-skill-radar
+                            data-labels="@ToJson(skillNames)"
+                            data-values="@ToJson(radarValues)"
+                            data-previous="@(data.DepartmentSkills != null && data.CompanySkills != null ? ToJson(data.CompanySkills) : null)"
+                            data-latest-label="@(data.DepartmentName ?? L["Company average"].Value)"
+                            data-previous-label="@L["Company average"]"
+                            role="img" aria-label="@L["Soft skills average"]"></canvas>
+                </div>
+                <div class="analytics-skill-row">
+                    @for (var i = 0; i < skillNames.Count; i++)
+                    {
+                        <span><small>@skillNames[i]</small><strong>@radarValues[i]</strong></span>
+                    }
+                </div>
+            }
+        </section>
+    </div>
+
+    @* ---------- Career status ---------- *@
+    <div class="col-xl-6">
+        <section class="surface surface--solid panel panel--fill h-100" aria-labelledby="statusTitle">
+            <h3 class="panel-title" id="statusTitle"><i class="bi bi-pie-chart" aria-hidden="true"></i> @L["Career status"]</h3>
+            @if (statusValues.Count == 0)
+            {
+                <p class="panel-empty">@L["No employees yet."]</p>
+            }
+            else
+            {
+                <div class="analytics-doughnut">
+                    <div class="analytics-doughnut-chart">
+                        <canvas data-chart="doughnut" data-labels="@ToJson(statusLabels)" data-values="@ToJson(statusValues)"
+                                data-colors="@ToJson(statusColors)" role="img" aria-label="@L["Career status"]"></canvas>
+                        <div class="analytics-doughnut-center"><strong>@data.EmployeeCount</strong><span>@L["Employees"]</span></div>
+                    </div>
+                    <ul class="analytics-legend">
+                        @for (var i = 0; i < statusLabels.Count; i++)
+                        {
+                            <li>
+                                <i style="background-color: @statusColors[i]" aria-hidden="true"></i>
+                                <span>@statusLabels[i]</span>
+                                <strong>@statusValues[i]</strong>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+        </section>
+    </div>
+
+    @* ---------- Exams ---------- *@
+    <div class="col-xl-7">
+        <section class="surface surface--solid panel h-100" aria-labelledby="examsTitle">
+            <h3 class="panel-title" id="examsTitle"><i class="bi bi-card-checklist" aria-hidden="true"></i> @L["Exam pass rate"]</h3>
+            @if (data.Exams.Count == 0)
+            {
+                <p class="panel-empty">@L["No exam attempts yet."]</p>
+            }
+            else
+            {
+                <div class="analytics-bars" style="height: @(data.Exams.Count * 38 + 30)px">
+                    <canvas data-chart="hbar" data-suffix="%" data-max="100"
+                            data-labels="@ToJson(data.Exams.Select(e => e.Title))"
+                            data-values="@ToJson(data.Exams.Select(e => e.PassRate))"
+                            data-extra="@ToJson(data.Exams.Select(e => L["{0} attempts · average {1}", e.Attempts, e.AverageScore].Value))"
+                            role="img" aria-label="@L["Exam pass rate"]"></canvas>
+                </div>
+                <p class="panel-note">@L["Pass mark: 60/100. Low pass rates show where employees need training."]</p>
+            }
+        </section>
+    </div>
+
+    @* ---------- Promotions ---------- *@
+    <div class="col-xl-5">
+        <section class="surface surface--solid panel h-100" aria-labelledby="promotionsTitle">
+            <h3 class="panel-title" id="promotionsTitle"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i> @L["Promotions per month"]</h3>
+            <div class="analytics-bars" style="height: 260px">
+                <canvas data-chart="bar" data-labels="@ToJson(monthLabels)" data-values="@ToJson(monthValues)"
+                        role="img" aria-label="@L["Promotions per month"]"></canvas>
+            </div>
+        </section>
+    </div>
+
+    @* ---------- Closest to promotion ---------- *@
+    <div class="col-xl-7">
+        <section class="surface surface--solid panel h-100" aria-labelledby="nearTitle">
+            <h3 class="panel-title" id="nearTitle"><i class="bi bi-rocket-takeoff" aria-hidden="true"></i> @L["Closest to promotion"]</h3>
+            @if (data.NearPromotion.Count == 0)
+            {
+                <p class="panel-empty">@L["No employees are working towards a next role."]</p>
+            }
+            else
+            {
+                <ul class="near-list">
+                    @foreach (var person in data.NearPromotion)
+                    {
+                        var initials = string.Concat(person.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => char.ToUpperInvariant(p[0])));
+                        <li>
+                            <a class="near-item" asp-controller="Employees" asp-action="Details" asp-route-id="@person.EmployeeId">
+                                <span class="avatar avatar--@(person.Name.Sum(c => c) % 6 + 1)" aria-hidden="true">@initials</span>
+                                <span class="near-info">
+                                    <span class="person-name">@person.Name</span>
+                                    <span class="near-role">@person.CurrentRole <i class="bi bi-arrow-right flip-rtl" aria-hidden="true"></i> @person.TargetRole</span>
+                                </span>
+                                <span class="near-score">
+                                    @if (person.Readiness.RequirementsComplete)
+                                    {
+                                        <span class="status-pill status-pill--success">@L["Ready to promote"]</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="near-percent">@person.Readiness.Score%</span>
+                                        <span class="meter meter--sm"><span class="meter-fill d-block" style="width: @person.Readiness.Score%"></span></span>
+                                    }
+                                </span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    @* ---------- Where employees are stuck ---------- *@
+    <div class="col-xl-5">
+        <section class="surface surface--solid panel h-100" aria-labelledby="stuckTitle">
+            <h3 class="panel-title" id="stuckTitle"><i class="bi bi-sign-stop" aria-hidden="true"></i> @L["Most needed next certificates"]</h3>
+            @if (data.StuckCertificates.Count == 0)
+            {
+                <p class="panel-empty">@L["No open roadmap steps."]</p>
+            }
+            else
+            {
+                var top = data.StuckCertificates.Max(s => s.Employees);
+                <ul class="stuck-list">
+                    @foreach (var item in data.StuckCertificates)
+                    {
+                        <li>
+                            <div class="stuck-head">
+                                <span class="stuck-title">@item.Title</span>
+                                <span class="stuck-count">@L["{0} employees", item.Employees]</span>
+                            </div>
+                            <div class="meter meter--sm"><div class="meter-fill" style="width: @(item.Employees * 100 / top)%"></div></div>
+                            @if (item.Rejected > 0)
+                            {
+                                <span class="stuck-note"><i class="bi bi-x-octagon" aria-hidden="true"></i> @L["{0} rejected uploads", item.Rejected]</span>
+                            }
+                        </li>
+                    }
+                </ul>
+                <p class="panel-note">@L["Group training on these certificates would help the most people at once."]</p>
+            }
+        </section>
+    </div>
+</div>

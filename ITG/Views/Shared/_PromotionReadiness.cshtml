@@ -1,0 +1,111 @@
+@model PromotionReadiness
+@* Promotion readiness card (employee Home + admin employee record).
+   Score = 60% certificates + 20% next-role exams + 20% soft skills (see ReadinessService). *@
+@{
+    var score = Math.Clamp(Model.Score, 0, 100);
+    const double circumference = 327; // 2 x pi x 52
+    var offset = (circumference * (100 - score) / 100).ToString("0.##", CultureInfo.InvariantCulture);
+
+    var (levelCss, levelText) = Model.RequirementsComplete ? ("ready", "Requirements complete")
+        : score >= 80 ? ("ready", "Almost ready")
+        : score >= 55 ? ("track", "On track")
+        : score >= 30 ? ("build", "Building up")
+        : ("start", "Getting started");
+
+    var certificatesWeight = PromotionReadiness.CertificatesWeight + (Model.HasNextRoleExams ? 0 : PromotionReadiness.ExamsWeight);
+
+    // "about 4 weeks" style text for the estimate
+    string? duration = null;
+    if (Model.EstimatedDays is int days && days > 0)
+    {
+        duration = days < 14 ? L["{0} days", days].Value
+            : days < 60 ? (Math.Round(days / 7.0) == 1 ? L["1 week"].Value : L["{0} weeks", (int)Math.Round(days / 7.0)].Value)
+            : (Math.Round(days / 30.0) == 1 ? L["1 month"].Value : L["{0} months", (int)Math.Round(days / 30.0)].Value);
+    }
+    var expectedDate = Model.EstimatedDays is int d2 && d2 > 0 ? DateTime.Today.AddDays(d2).ToString("MMMM yyyy") : null;
+}
+
+<section class="surface feature-card readiness-card h-100" aria-labelledby="readinessTitle">
+    <div class="feature-card-head">
+        <span class="feature-icon"><i class="bi bi-rocket-takeoff" aria-hidden="true"></i></span>
+        <h3 class="feature-card-title" id="readinessTitle">@L["Promotion Readiness"]</h3>
+    </div>
+
+    @if (!Model.Applies)
+    {
+        <p class="readiness-empty">
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+            <span>@L["The readiness score appears once the next role is set."]</span>
+        </p>
+    }
+    else
+    {
+        <div class="readiness-body">
+            <div class="readiness-ring readiness-ring--@levelCss" role="progressbar" aria-label="@L["Promotion Readiness"]"
+                 aria-valuenow="@score" aria-valuemin="0" aria-valuemax="100">
+                <svg viewBox="0 0 120 120" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="readinessGradient" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#1e73be" />
+                            <stop offset="70%" stop-color="#4aa1ea" />
+                            <stop offset="100%" stop-color="#e9c440" />
+                        </linearGradient>
+                    </defs>
+                    <circle class="progress-ring-track" cx="60" cy="60" r="52" />
+                    <circle class="readiness-ring-value" cx="60" cy="60" r="52" style="stroke-dashoffset: @offset" />
+                </svg>
+                <div class="progress-ring-label">
+                    <strong data-countup>@score%</strong>
+                    <span>@L["Ready"]</span>
+                </div>
+            </div>
+
+            <div class="readiness-details">
+                <span class="readiness-level readiness-level--@levelCss">@L[levelText]</span>
+
+                <ul class="readiness-parts">
+                    <li>
+                        <div class="readiness-part-head">
+                            <span><i class="bi bi-patch-check" aria-hidden="true"></i> @L["Certificates"] <small>@certificatesWeight%</small></span>
+                            <span class="readiness-part-value">@Model.CertificatesPercent%</span>
+                        </div>
+                        <div class="meter meter--sm"><div class="meter-fill" style="width: @Model.CertificatesPercent%"></div></div>
+                    </li>
+                    @if (Model.HasNextRoleExams)
+                    {
+                        <li>
+                            <div class="readiness-part-head">
+                                <span><i class="bi bi-card-checklist" aria-hidden="true"></i> @L["Next role exams"] <small>@PromotionReadiness.ExamsWeight%</small></span>
+                                <span class="readiness-part-value">@Model.ExamsPercent%</span>
+                            </div>
+                            <div class="meter meter--sm"><div class="meter-fill" style="width: @Model.ExamsPercent%"></div></div>
+                        </li>
+                    }
+                    <li>
+                        <div class="readiness-part-head">
+                            <span><i class="bi bi-people" aria-hidden="true"></i> @L["Soft skills"] <small>@PromotionReadiness.SkillsWeight%</small></span>
+                            <span class="readiness-part-value">@(Model.HasAssessment ? Model.SkillsPercent + "%" : L["Not assessed"].Value)</span>
+                        </div>
+                        <div class="meter meter--sm"><div class="meter-fill" style="width: @Model.SkillsPercent%"></div></div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <p class="readiness-estimate">
+            <i class="bi bi-calendar-check" aria-hidden="true"></i>
+            @if (Model.RequirementsComplete)
+            {
+                <span>@L["All certificates are verified. The promotion is waiting for HR approval."]</span>
+            }
+            else if (duration != null)
+            {
+                <span>@L["At the current pace, the requirements should be complete in about {0} (around {1}).", duration, expectedDate ?? ""]</span>
+            }
+            else
+            {
+                <span>@L["Not enough history yet to estimate the time to promotion."]</span>
+            }
+        </p>
+    }
+</section>

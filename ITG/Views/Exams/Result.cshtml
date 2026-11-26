@@ -1,0 +1,86 @@
+@model ExamResult
+@{
+    ViewData["Title"] = Model.ExamTitle;
+    var letters = new[] { "A", "B", "C", "D" };
+    var minutes = Math.Max(1, (int)Math.Round((Model.CompletedAt - Model.StartedAt).TotalMinutes));
+}
+
+<a class="back-link" asp-action="Index">
+    <i class="bi bi-arrow-left flip-rtl" aria-hidden="true"></i> @L["Back to Exams"]
+</a>
+
+@* ---------- Score summary ---------- *@
+<section class="surface surface--tinted result-hero">
+    <div class="result-ring @(Model.Passed ? "result-ring--pass" : "result-ring--fail")" style="--score: @Model.Score">
+        <span><strong>@Model.Score</strong><small>/100</small></span>
+    </div>
+    <div class="result-info">
+        <h2 class="result-title">@Model.ExamTitle</h2>
+        <span class="status-pill status-pill--@(Model.Passed ? "success" : "danger")">@L[Model.Passed ? "Passed" : "Failed"]</span>
+        <ul class="result-facts">
+            <li><i class="bi bi-check2-circle" aria-hidden="true"></i> @L["{0} of {1} correct", Model.CorrectAnswers, Model.TotalQuestions]</li>
+            <li><i class="bi bi-arrow-repeat" aria-hidden="true"></i> @L["Attempt {0}", Model.AttemptNumber]</li>
+            <li><i class="bi bi-clock" aria-hidden="true"></i> @L["{0} min", minutes]</li>
+        </ul>
+    </div>
+    <form asp-action="Start" asp-route-id="@Model.ExamId" method="post" class="result-action"
+          data-loading="@L["Preparing your exam with AI..."]">
+        <button type="submit" class="btn btn-itg btn-itg--pill">
+            <i class="bi bi-arrow-repeat" aria-hidden="true"></i> @L["Retake"]
+        </button>
+    </form>
+</section>
+
+@* ---------- Answers review ---------- *@
+@if (Model.Items.Count == 0)
+{
+    <div class="empty-state">
+        <i class="bi bi-journal-text" aria-hidden="true"></i>
+        <h3>@L["No details for this attempt"]</h3>
+        <p>@L["Only the final score was saved for this attempt."]</p>
+    </div>
+}
+else
+{
+    <h3 class="section-title">@L["Review your answers"]</h3>
+    <ol class="question-list">
+        @for (var i = 0; i < Model.Items.Count; i++)
+        {
+            var item = Model.Items[i];
+            <li class="question-card question-card--@(item.IsCorrect ? "correct" : "wrong")">
+                <div class="question-head">
+                    <p class="question-number">@L["Question {0}", i + 1]</p>
+                    @if (item.ChosenIndex == null)
+                    {
+                        <span class="status-pill status-pill--muted">@L["Not answered"]</span>
+                    }
+                    else
+                    {
+                        <span class="status-pill status-pill--@(item.IsCorrect ? "success" : "danger")">@L[item.IsCorrect ? "Correct" : "Wrong"]</span>
+                    }
+                </div>
+                <h4 class="question-text">@item.Question</h4>
+                <div class="option-list">
+                    @for (var j = 0; j < item.Options.Count; j++)
+                    {
+                        var css = j == item.CorrectIndex ? "is-correct" : j == item.ChosenIndex ? "is-wrong" : "";
+                        <div class="option-tile option-tile--static @css">
+                            <span class="option-letter">@letters[j]</span>
+                            <span class="option-text">@item.Options[j]</span>
+                            @if (j == item.ChosenIndex)
+                            {
+                                <span class="option-tag">@L["Your answer"]</span>
+                            }
+                        </div>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(item.Explanation))
+                {
+                    <p class="question-explanation"><i class="bi bi-lightbulb" aria-hidden="true"></i> @item.Explanation</p>
+                }
+            </li>
+        }
+    </ol>
+}
+
+<partial name="_LoadingOverlay" />

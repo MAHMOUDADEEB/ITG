@@ -1,0 +1,124 @@
+@model IReadOnlyList<EmployeeListItem>
+@{
+    ViewData["Title"] = L["Employees"].Value;
+    var departments = (IReadOnlyList<LookupItem>)ViewBag.Departments;
+    var positions = (IReadOnlyList<LookupItem>)ViewBag.Positions;
+}
+
+<partial name="_ManageTabs" />
+
+<section class="surface surface--solid table-card">
+    <div class="table-toolbar">
+        <div class="table-heading">
+            <h3>@L["Employees"]</h3>
+            <span>@L["{0} Employees", Model.Count]</span>
+        </div>
+        <button type="button" class="btn btn-itg btn-itg--pill" data-bs-toggle="modal" data-bs-target="#employeeModal"
+                data-modal-title="@L["Add Employee"]">
+            <i class="bi bi-person-plus" aria-hidden="true"></i> @L["Add Employee"]
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="itg-table">
+            <thead>
+                <tr>
+                    <th scope="col">@L["Employee"]</th>
+                    <th scope="col">@L["Email Address"]</th>
+                    <th scope="col">@L["Department"]</th>
+                    <th scope="col">@L["Current Role"]</th>
+                    <th scope="col" class="text-center">@L["Actions"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    var row = new EmployeeRow(item.Id, item.Name, item.EmployeeNumber, null, null, 0, CareerStatus.InProgress, 0);
+                    <tr>
+                        <td>
+                            <div class="person-cell">
+                                <span class="avatar avatar--@row.ColorIndex" aria-hidden="true">@row.Initials</span>
+                                <div>
+                                    <span class="person-name">@item.Name</span>
+                                    <span class="person-id">@item.EmployeeNumber</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="cell-muted" dir="ltr">@item.Email</td>
+                        <td class="cell-muted">@(item.DepartmentName ?? "—")</td>
+                        <td class="cell-muted">@(item.CurrentPositionTitle ?? "—")</td>
+                        <td>
+                            <div class="review-actions justify-content-center">
+                                <a class="icon-action" asp-action="Details" asp-route-id="@item.Id" title="@L["Record"]" aria-label="@L["Record"]">
+                                    <i class="bi bi-person-lines-fill" aria-hidden="true"></i>
+                                </a>
+                                <button type="button" class="icon-action" title="@L["Edit"]" aria-label="@L["Edit"]"
+                                        data-bs-toggle="modal" data-bs-target="#employeeModal" data-modal-title="@L["Edit Employee"]"
+                                        data-fill='@Json.Serialize(new { item.Id, item.Name, item.Email, item.EmployeeNumber, item.DepartmentId, item.CurrentPositionId })'>
+                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div class="modal fade" id="employeeModal" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true" data-entity-modal>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form class="modal-content itg-modal" asp-action="Save" method="post">
+            <div class="modal-header">
+                <h2 class="modal-title" id="employeeModalLabel">@L["Add Employee"]</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@L["Close"]"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="Id" value="" />
+                <div class="row g-3">
+                    <label class="form-field col-md-8">
+                        <span class="itg-label">@L["Full Name"]</span>
+                        <input type="text" name="Name" class="form-control itg-input" maxlength="100" required />
+                    </label>
+                    <label class="form-field col-md-4">
+                        <span class="itg-label">@L["Employee ID"]</span>
+                        <input type="text" name="EmployeeNumber" class="form-control itg-input" maxlength="20" placeholder="EMP-011" dir="ltr" required />
+                    </label>
+                    <label class="form-field col-md-6">
+                        <span class="itg-label">@L["Email Address"]</span>
+                        <input type="email" name="Email" class="form-control itg-input" dir="ltr" required />
+                    </label>
+                    <label class="form-field col-md-6" data-create-only>
+                        <span class="itg-label">@L["Password"]</span>
+                        <input type="text" name="Password" class="form-control itg-input" dir="ltr" autocomplete="new-password"
+                               placeholder="@L["At least 8 characters, a number and a capital letter"]" />
+                    </label>
+                    <label class="form-field col-md-6">
+                        <span class="itg-label">@L["Department"]</span>
+                        <select name="DepartmentId" class="form-select itg-input">
+                            <option value="">@L["None"]</option>
+                            @foreach (var department in departments)
+                            {
+                                <option value="@department.Id">@department.Text</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="form-field col-md-6">
+                        <span class="itg-label">@L["Current Role"]</span>
+                        <select name="CurrentPositionId" class="form-select itg-input" data-searchable>
+                            <option value="">@L["None"]</option>
+                            @foreach (var position in positions)
+                            {
+                                <option value="@position.Id">@position.Text</option>
+                            }
+                        </select>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-itg-outline" data-bs-dismiss="modal">@L["Cancel"]</button>
+                <button type="submit" class="btn btn-itg">@L["Save"]</button>
+            </div>
+        </form>
+    </div>
+</div>

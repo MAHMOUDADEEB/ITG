@@ -1,0 +1,11 @@
+@model ExamCard
+@* Which of the employee's roles the exam belongs to.
+   An exam of both roles shows "Next Role", because it is the one that helps the promotion. *@
+@if (Model.ForNextRole)
+{
+    <span class="role-badge role-badge--next"><i class="bi bi-arrow-up-right-circle" aria-hidden="true"></i> @L["Next Role"]</span>
+}
+else if (Model.ForCurrentRole)
+{
+    <span class="role-badge role-badge--current"><i class="bi bi-person-badge" aria-hidden="true"></i> @L["Current Role"]</span>
+}

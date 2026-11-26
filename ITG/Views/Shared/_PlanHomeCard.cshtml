@@ -1,0 +1,52 @@
+@model PlanView
+@* Home: this week of the AI development plan (or an invitation to create one) *@
+<section class="surface feature-card plan-home h-100" aria-labelledby="planHomeTitle">
+    <div class="feature-card-head">
+        <i class="bi bi-stars feature-spark" aria-hidden="true"></i>
+        <h3 class="feature-card-title" id="planHomeTitle">@L["My Development Plan"]</h3>
+    </div>
+
+    @if (Model == null)
+    {
+        <p class="feature-text">@L["Let the AI build a 4-week plan from your roadmap, exams and skills."]</p>
+        <a class="btn btn-itg btn-itg--lg w-100" asp-controller="Plan" asp-action="Index">
+            <i class="bi bi-stars" aria-hidden="true"></i> @L["Create my plan"]
+        </a>
+        <p class="feature-note">@L["You can tick each task as you finish it."]</p>
+    }
+    else
+    {
+        var weekIndex = Math.Min(Model.CurrentWeek, Model.Content.Weeks.Count) - 1;
+        var week = Model.Content.Weeks[weekIndex];
+
+        <div class="inset-box">
+            <div class="plan-home-week">
+                <span class="plan-week-number">@L["Week {0} of {1}", weekIndex + 1, Model.Content.Weeks.Count]</span>
+                <span class="plan-home-title">@week.Title</span>
+            </div>
+
+            <ul class="plan-home-tasks">
+                @foreach (var task in week.Tasks.Take(3))
+                {
+                    <li class="@(task.Done ? "is-done" : "")">
+                        <i class="bi @(task.Done ? "bi-check-circle-fill" : "bi-circle")" aria-hidden="true"></i>
+                        <span>@task.Text</span>
+                    </li>
+                }
+            </ul>
+
+            <div class="mini-progress">
+                <span>@L["{0} of {1} tasks done", Model.DoneTasks, Model.TotalTasks]</span>
+                <span class="mini-progress-value">@Model.Percent%</span>
+            </div>
+            <div class="meter" role="progressbar" aria-label="@L["Plan progress"]"
+                 aria-valuenow="@Model.Percent" aria-valuemin="0" aria-valuemax="100">
+                <div class="meter-fill" style="width: @Model.Percent%"></div>
+            </div>
+
+            <a class="link-arrow" asp-controller="Plan" asp-action="Index">
+                @L["Open my plan"] <i class="bi bi-chevron-right flip-rtl" aria-hidden="true"></i>
+            </a>
+        </div>
+    }
+</section>

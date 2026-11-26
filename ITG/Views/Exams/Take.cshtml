@@ -1,0 +1,61 @@
+@model ExamToTake
+@{
+    // Seconds left are worked out on the server, so the timer does not depend on
+    // the time zone or the clock of the user's computer
+    var secondsLeft = Math.Max(0, (int)(Model.ExpiresAtUtc - DateTime.UtcNow).TotalSeconds);
+}
+@{
+    ViewData["Title"] = Model.ExamTitle;
+    ViewData["HideSearch"] = true;
+    var letters = new[] { "A", "B", "C", "D" };
+}
+
+<form asp-action="Submit" asp-route-id="@Model.AttemptId" method="post" data-exam-form
+      data-msg-unanswered="@L["You have {0} unanswered questions. Submit anyway?"]">
+
+    @* ---------- Sticky header with timer ---------- *@
+    <div class="exam-bar">
+        <div class="exam-bar-title">
+            <h2>@Model.ExamTitle</h2>
+            <span>@L["Attempt {0}", Model.AttemptNumber] · @L["{0} questions", Model.Questions.Count]</span>
+        </div>
+        <div class="exam-bar-stats">
+            <span class="exam-bar-answered">
+                <i class="bi bi-check2-square" aria-hidden="true"></i>
+                <span data-answered-count>0</span>/@Model.Questions.Count
+            </span>
+            <span class="exam-timer" data-exam-timer data-seconds-left="@secondsLeft" role="timer"
+                  aria-label="@L["Time left"]">
+                <i class="bi bi-clock" aria-hidden="true"></i> <span data-timer-text>--:--</span>
+            </span>
+        </div>
+    </div>
+
+    @* ---------- Questions ---------- *@
+    <ol class="question-list">
+        @for (var i = 0; i < Model.Questions.Count; i++)
+        {
+            var question = Model.Questions[i];
+            <li class="question-card">
+                <p class="question-number">@L["Question {0}", i + 1]</p>
+                <h3 class="question-text">@question.Question</h3>
+                <div class="option-list" role="radiogroup" aria-label="@L["Question {0}", i + 1]">
+                    @for (var j = 0; j < question.Options.Count; j++)
+                    {
+                        <label class="option-tile">
+                            <input type="radio" name="q@(i)" value="@j" class="visually-hidden" data-answer />
+                            <span class="option-letter">@letters[j]</span>
+                            <span class="option-text">@question.Options[j]</span>
+                        </label>
+                    }
+                </div>
+            </li>
+        }
+    </ol>
+
+    <div class="exam-submit">
+        <button type="submit" class="btn btn-itg btn-itg--pill btn-itg--lg">
+            <i class="bi bi-send-check" aria-hidden="true"></i> @L["Submit Exam"]
+        </button>
+    </div>
+</form>

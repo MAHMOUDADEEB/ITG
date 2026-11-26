@@ -1,0 +1,11 @@
+﻿@{
+    var titleKey = ViewData["TitleKey"] as string ?? "Home";
+    ViewData["Title"] = L[titleKey].Value;
+}
+
+<div class="coming-soon">
+    <i class="bi bi-tools" aria-hidden="true"></i>
+    <h2 class="h4 mt-3">@L[titleKey]</h2>
+    <p class="text-body-secondary mb-4">@L["This page is under construction."]</p>
+    <a asp-area="" asp-controller="Home" asp-action="Index" class="btn btn-auth w-auto px-4">@L["Back to Home"]</a>
+</div>

@@ -1,0 +1,43 @@
+@model CareerProgress
+@* "Current Role -> Target Role" block used on Home, Dashboard, Roadmap and the admin record.
+   ViewData["ReadOnly"] = true hides the fork drop-down (admin view). *@
+@{
+    var readOnly = ViewData["ReadOnly"] as bool? == true;
+}
+
+<div class="role-transition">
+    <div class="role-block">
+        <span class="role-label">@L["Current Role"]</span>
+        <span class="role-value">@(Model.CurrentPositionTitle ?? L["Not assigned"].Value)</span>
+    </div>
+
+    <i class="bi bi-arrow-right role-arrow flip-rtl" aria-hidden="true"></i>
+
+    <div class="role-block role-block--target">
+        <span class="role-label">@L["Target Role"]</span>
+        @if (Model.CanChoosePath && !readOnly)
+        {
+            @* HR opened several paths: the employee picks one (final) *@
+            <partial name="_PathSelector" model="Model" />
+        }
+        else if (Model.IsAwaitingPathDecision)
+        {
+            <span class="role-value role-value--muted role-value--waiting">
+                <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+                @(readOnly ? L["Awaiting your decision"] : L["Set by HR soon"])
+            </span>
+        }
+        else if (Model.CanChoosePath)
+        {
+            <span class="role-value role-value--muted">@L["Waiting for the employee to choose"]</span>
+        }
+        else if (Model.HasTarget)
+        {
+            <span class="role-value role-value--target">@Model.TargetPositionTitle</span>
+        }
+        else
+        {
+            <span class="role-value role-value--muted">@L["Top of your path"]</span>
+        }
+    </div>
+</div>

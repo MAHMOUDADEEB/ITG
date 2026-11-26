@@ -1,0 +1,12 @@
+@model string
+@* Icon for a plan task type *@
+@{
+    var icon = Model switch
+    {
+        "certificate" => "bi-patch-check",
+        "exam" => "bi-card-checklist",
+        "skill" => "bi-people",
+        _ => "bi-lightning-charge"
+    };
+}
+<i class="bi @icon plan-task-icon plan-task-icon--@Model" aria-hidden="true"></i>

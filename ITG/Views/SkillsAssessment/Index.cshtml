@@ -1,0 +1,41 @@
+@{
+    ViewData["Title"] = L["Assess Your Skills"].Value;
+    ViewData["HideSearch"] = true;
+    var skills = new[]
+    {
+        ("bi-people", "Teamwork"),
+        ("bi-lightbulb", "Problem Solving"),
+        ("bi-chat-dots", "Communication"),
+        ("bi-flag", "Leadership")
+    };
+}
+
+<section class="surface feature-card assess-intro">
+    <div class="assess-intro-icon"><i class="bi bi-clipboard-check" aria-hidden="true"></i></div>
+    <h2 class="page-title text-center">@L["Assess Your Skills"]</h2>
+    <p class="page-subtitle text-center">@L["Find The Skills To Develop For Your Target Role."]</p>
+
+    <div class="assess-skills">
+        @foreach (var (icon, name) in skills)
+        {
+            <div class="assess-skill">
+                <i class="bi @icon" aria-hidden="true"></i>
+                <span>@L[name]</span>
+            </div>
+        }
+    </div>
+
+    <ul class="assess-rules">
+        <li><i class="bi bi-ui-radios" aria-hidden="true"></i> @L["16 short workplace situations. Choose what you would really do."]</li>
+        <li><i class="bi bi-stars" aria-hidden="true"></i> @L["The questions are written by AI for your role."]</li>
+        <li><i class="bi bi-lock" aria-hidden="true"></i> @L["You can take this assessment once. Only HR can re-open it."]</li>
+        <li><i class="bi bi-eye" aria-hidden="true"></i> @L["Your result is shared with HR."]</li>
+    </ul>
+
+    <a class="btn btn-itg btn-itg--lg w-100" asp-action="Questions" data-loading-link="@L["Preparing your assessment with AI..."]">
+        @L["Start AI Assessment"]
+    </a>
+    <p class="feature-note">@L["Your Results Will Guide Your Learning Path."]</p>
+</section>
+
+<partial name="_LoadingOverlay" />

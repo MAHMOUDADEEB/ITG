@@ -1,0 +1,30 @@
+@* Dialog to reject a certificate with a reason. site.js fills the id and title. *@
+@{
+    var returnUrl = $"{Context.Request.PathBase}{Context.Request.Path}{Context.Request.QueryString}";
+}
+
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content itg-modal" asp-area="Admin" asp-controller="Reviews" asp-action="Reject" method="post" data-reject-form>
+            <div class="modal-header">
+                <h2 class="modal-title" id="rejectModalLabel">@L["Reject Certificate"]</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@L["Close"]"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="id" data-reject-id />
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                <p class="upload-cert-name" data-reject-title></p>
+
+                <label for="rejectReason" class="form-label itg-label">@L["Reason for rejection"]</label>
+                <textarea id="rejectReason" name="reason" class="form-control itg-textarea" rows="4" maxlength="500" required
+                          placeholder="@L["Explain what the employee should fix."]"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-itg-outline" data-bs-dismiss="modal">@L["Cancel"]</button>
+                <button type="submit" class="btn btn-itg btn-itg--danger">
+                    <i class="bi bi-x-circle" aria-hidden="true"></i> @L["Reject"]
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

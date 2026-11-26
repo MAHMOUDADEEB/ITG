@@ -1,0 +1,30 @@
+@* Success / error messages set by controllers before a redirect.
+   They appear as small cards in the corner and close by themselves (see site.js). *@
+@{
+    var success = TempData["StatusSuccess"] as string;
+    var error = TempData["StatusError"] as string;
+}
+
+@if (!string.IsNullOrEmpty(success) || !string.IsNullOrEmpty(error))
+{
+    <div class="toast-stack" aria-live="polite">
+        @if (!string.IsNullOrEmpty(success))
+        {
+            <div class="itg-toast itg-toast--success" role="status" data-toast>
+                <span class="itg-toast-icon"><i class="bi bi-check-lg" aria-hidden="true"></i></span>
+                <span class="itg-toast-text">@success</span>
+                <button type="button" class="btn-close" data-toast-close aria-label="@L["Close"]"></button>
+                <span class="itg-toast-timer" aria-hidden="true"></span>
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="itg-toast itg-toast--error" role="alert" data-toast>
+                <span class="itg-toast-icon"><i class="bi bi-exclamation-lg" aria-hidden="true"></i></span>
+                <span class="itg-toast-text">@error</span>
+                <button type="button" class="btn-close" data-toast-close aria-label="@L["Close"]"></button>
+                <span class="itg-toast-timer" aria-hidden="true"></span>
+            </div>
+        }
+    </div>
+}

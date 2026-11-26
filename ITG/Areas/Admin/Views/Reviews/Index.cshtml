@@ -1,0 +1,75 @@
+@model IReadOnlyList<PendingReview>
+@{
+    ViewData["Title"] = L["Pending HR Review"].Value;
+}
+
+<a class="back-link" asp-controller="Dashboard" asp-action="Index">
+    <i class="bi bi-arrow-left flip-rtl" aria-hidden="true"></i> @L["Back to Dashboard"]
+</a>
+
+<header class="page-header">
+    <h2 class="page-title">@L["Pending HR Review"]</h2>
+    <p class="page-subtitle">@L["Certificates uploaded by employees and waiting for your decision."]</p>
+</header>
+
+<section class="surface surface--solid table-card">
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state my-3">
+            <i class="bi bi-inbox" aria-hidden="true"></i>
+            <h3>@L["All caught up"]</h3>
+            <p>@L["There are no certificates waiting for review."]</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="itg-table">
+                <thead>
+                    <tr>
+                        <th scope="col">@L["Employee"]</th>
+                        <th scope="col">@L["Department"]</th>
+                        <th scope="col">@L["Certificate"]</th>
+                        <th scope="col">@L["Uploaded"]</th>
+                        <th scope="col">@L["Issue Date"]</th>
+                        <th scope="col" class="text-center">@L["Actions"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var review in Model)
+                    {
+                        var row = new EmployeeRow(review.EmployeeId, review.EmployeeName, review.EmployeeNumber,
+                            review.DepartmentName, null, 0, CareerStatus.InProgress, 0);
+                        <tr>
+                            <td>
+                                <a class="person-cell person-cell--link" asp-controller="Employees" asp-action="Details" asp-route-id="@review.EmployeeId">
+                                    <span class="avatar avatar--@row.ColorIndex" aria-hidden="true">@row.Initials</span>
+                                    <div>
+                                        <span class="person-name">@review.EmployeeName</span>
+                                        <span class="person-id">@review.EmployeeNumber</span>
+                                    </div>
+                                </a>
+                            </td>
+                            <td class="cell-muted">@(review.DepartmentName ?? "—")</td>
+                            <td><span class="person-name">@review.CertificateTitle</span></td>
+                            <td class="cell-muted">@review.SubmittedAt.ToLocalFromUtc().ToString("d MMM yyyy")</td>
+                            <td class="cell-muted">@(review.IssuedOn?.ToString("d MMM yyyy") ?? "—")</td>
+                            <td>
+                                <div class="review-actions justify-content-center">
+                                    <a class="icon-action" asp-area="" asp-controller="CertificateFiles" asp-action="Open"
+                                       asp-route-id="@review.SubmissionId" target="_blank" rel="noopener"
+                                       title="@L["View File"]" aria-label="@L["View File"]">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </a>
+                                    <partial name="_ReviewActions" model="new ReviewActionModel(review.SubmissionId, review.CertificateTitle)" />
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+<partial name="_RejectModal" />

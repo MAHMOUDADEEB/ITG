@@ -1,0 +1,75 @@
+@using System.Security.Claims
+@using ITG.Services.Interfaces
+@inject INotificationService Notifications
+@* Bell in the top bar: unread count + the latest notifications *@
+@{
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    var summary = userId == null ? NotificationSummary.Empty : await Notifications.GetSummaryAsync(userId);
+    var returnUrl = $"{Context.Request.PathBase}{Context.Request.Path}{Context.Request.QueryString}";
+
+    // "5 min ago" style time
+    string Ago(DateTime createdUtc)
+    {
+        var span = DateTime.UtcNow - DateTime.SpecifyKind(createdUtc, DateTimeKind.Utc);
+        if (span.TotalMinutes < 1) return L["Just now"].Value;
+        if (span.TotalHours < 1) return L["{0} min ago", (int)span.TotalMinutes].Value;
+        if (span.TotalDays < 1) return L["{0} h ago", (int)span.TotalHours].Value;
+        if (span.TotalDays < 30) return L["{0} d ago", (int)span.TotalDays].Value;
+        return createdUtc.ToLocalFromUtc().ToString("d MMM yyyy");
+    }
+}
+
+<div class="dropdown">
+    <button type="button" class="topbar-icon-btn notif-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+            aria-expanded="false" aria-label="@L["Notifications"]" title="@L["Notifications"]">
+        <i class="bi @(summary.UnreadCount > 0 ? "bi-bell-fill" : "bi-bell")" aria-hidden="true"></i>
+        @if (summary.UnreadCount > 0)
+        {
+            <span class="notif-badge">@(summary.UnreadCount > 9 ? "9+" : summary.UnreadCount.ToString())</span>
+            <span class="visually-hidden">@L["{0} unread", summary.UnreadCount]</span>
+        }
+    </button>
+
+    <div class="dropdown-menu dropdown-menu-end notif-menu">
+        <div class="notif-head">
+            <span class="notif-title">@L["Notifications"]</span>
+            @if (summary.UnreadCount > 0)
+            {
+                <form asp-area="" asp-controller="Notifications" asp-action="ReadAll" method="post" class="m-0">
+                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                    <button type="submit" class="notif-read-all">@L["Mark all as read"]</button>
+                </form>
+            }
+        </div>
+
+        @if (summary.Items.Count == 0)
+        {
+            <div class="notif-empty">
+                <i class="bi bi-bell-slash" aria-hidden="true"></i>
+                <span>@L["No notifications yet"]</span>
+            </div>
+        }
+        else
+        {
+            <ul class="notif-list">
+                @foreach (var item in summary.Items)
+                {
+                    <li>
+                        <a class="notif-item @(item.IsRead ? "" : "is-unread")"
+                           asp-area="" asp-controller="Notifications" asp-action="Open" asp-route-id="@item.Id">
+                            <span class="notif-icon"><i class="bi @item.Icon" aria-hidden="true"></i></span>
+                            <span class="notif-body">
+                                <span class="notif-text">@L[item.MessageKey, item.Arguments]</span>
+                                <span class="notif-time">@Ago(item.CreatedAt)</span>
+                            </span>
+                            @if (!item.IsRead)
+                            {
+                                <span class="notif-dot" aria-label="@L["Unread"]"></span>
+                            }
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <!-- Long texts -->
+  <data name="LoginHeroText" xml:space="preserve"><value>Build Your Skills With Personalized Learning Paths, Relevant Courses And Assessments Designed To Support Your Career Growth At ITG.</value></data>
+  <data name="LoginAboutText" xml:space="preserve"><value>Integrated Technology Group Provides Technology Solutions For Education, Government, And Business.</value></data>
+  <data name="AccountLocked" xml:space="preserve"><value>Your account is locked after several failed attempts. Please try again in 5 minutes.</value></data>
+</root>

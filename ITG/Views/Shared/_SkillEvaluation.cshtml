@@ -1,0 +1,97 @@
+@model SkillComparison
+@* AI soft-skills result (Home + admin record).
+   When there is an earlier assessment, every score is compared with it. *@
+@{
+    var latest = Model.Latest;
+    var previous = Model.Previous;
+    var skills = new List<(string Name, int Score, int? Before)>
+    {
+        ("Teamwork", latest.TeamworkScore, previous?.TeamworkScore),
+        ("Problem Solving", latest.ProblemSolvingScore, previous?.ProblemSolvingScore),
+        ("Communication", latest.CommunicationScore, previous?.CommunicationScore),
+        ("Leadership", latest.LeadershipScore, previous?.LeadershipScore)
+    };
+    var latestDate = latest.CreatedAt.ToLocalFromUtc().ToString("d MMM yyyy");
+    var previousDate = previous?.CreatedAt.ToLocalFromUtc().ToString("d MMM yyyy");
+    var labelsJson = System.Text.Json.JsonSerializer.Serialize(skills.Select(s => L[s.Name].Value));
+    var valuesJson = System.Text.Json.JsonSerializer.Serialize(skills.Select(s => s.Score));
+    var previousJson = previous == null ? null : System.Text.Json.JsonSerializer.Serialize(skills.Select(s => s.Before));
+}
+
+<div class="eval-summary">
+    <div class="eval-summary-item">
+        <span class="eval-label">@L["Skills Assessment Result"]</span>
+        <span class="eval-score-row">
+            <span class="eval-score">@latest.OverallScore/100</span>
+            @if (previous != null)
+            {
+                <partial name="_DeltaChip" model="latest.OverallScore - previous.OverallScore" />
+            }
+        </span>
+    </div>
+    <div class="eval-summary-item">
+        <span class="eval-label">@L["Overall Employee Rating"]</span>
+        <span class="rating-pill">@L[SkillRating.LabelFor(latest.OverallScore)]</span>
+    </div>
+</div>
+
+@if (previous != null)
+{
+    @* Legend for the two shapes on the chart *@
+    <div class="eval-legend">
+        <span class="eval-legend-item eval-legend-item--latest">
+            <i aria-hidden="true"></i> @L["Latest"] <span class="eval-legend-date">@latestDate</span>
+        </span>
+        <span class="eval-legend-item eval-legend-item--previous">
+            <i aria-hidden="true"></i> @L["Previous"] <span class="eval-legend-date">@previousDate</span>
+        </span>
+    </div>
+}
+else
+{
+    <p class="eval-compare-note">
+        <i class="bi bi-info-circle" aria-hidden="true"></i>
+        <span>@L["First assessment. A comparison will appear after the next one."]</span>
+    </p>
+}
+
+<div class="skill-layout">
+    @* Radar chart of the four skills (drawn by Chart.js, see site.js) *@
+    <div class="skill-radar">
+        <canvas data-skill-radar
+                data-labels="@labelsJson"
+                data-values="@valuesJson"
+                data-previous="@previousJson"
+                data-latest-label="@L["Latest"]"
+                data-previous-label="@L["Previous"]"
+                role="img" aria-label="@L["Skills chart"]"></canvas>
+    </div>
+
+    <div class="skill-grid">
+        @foreach (var skill in skills)
+        {
+            <div class="skill-meter">
+                <div class="skill-meter-head">
+                    <span>@L[skill.Name]</span>
+                    <span class="skill-meter-values">
+                        @if (skill.Before.HasValue)
+                        {
+                            <partial name="_DeltaChip" model="skill.Score - skill.Before.Value" />
+                        }
+                        <span class="skill-meter-value">@skill.Score%</span>
+                    </span>
+                </div>
+                <div class="meter" role="progressbar" aria-label="@L[skill.Name]"
+                     aria-valuenow="@skill.Score" aria-valuemin="0" aria-valuemax="100">
+                    <div class="meter-fill" style="width: @skill.Score%"></div>
+                    @if (skill.Before.HasValue)
+                    {
+                        @* Thin mark where the previous score was *@
+                        <span class="meter-mark" style="inset-inline-start: @skill.Before.Value%"
+                              title="@L["Previous"]: @skill.Before.Value%"></span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

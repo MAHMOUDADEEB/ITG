@@ -1,0 +1,221 @@
+@model AdminDashboardViewModel
+@{
+    ViewData["Title"] = L["Admin Dashboard"].Value;
+
+    // Builds a link to another page while keeping the current filters
+    Dictionary<string, string> RouteFor(int page) => new()
+    {
+        ["q"] = Model.Search ?? "",
+        ["department"] = Model.DepartmentId?.ToString() ?? "",
+        ["status"] = Model.Status?.ToString() ?? "",
+        ["pageSize"] = Model.PageSize.ToString(),
+        ["page"] = page.ToString()
+    };
+
+    // Page numbers to show: first, last, current +- 1, with "..." gaps
+    var pages = Enumerable.Range(1, Model.TotalPages)
+        .Where(p => p == 1 || p == Model.TotalPages || Math.Abs(p - Model.Page) <= 1)
+        .ToList();
+
+    var statuses = new[]
+    {
+        (CareerStatus.InProgress, "In Progress"),
+        (CareerStatus.ReviewPending, "Review Pending"),
+        (CareerStatus.ReadyForPromotion, "Completed"),
+        (CareerStatus.NotStarted, "Not Started"),
+        (CareerStatus.AwaitingPathDecision, "Awaiting Path Decision"),
+        (CareerStatus.ChoosingPath, "Choosing Path"),
+        (CareerStatus.TopOfPath, "Top Level")
+    };
+}
+
+<div class="admin-header">
+    <div>
+        <h2 class="page-title">@L["Admin Dashboard"]</h2>
+        <p class="page-subtitle">@L["Manage Employee Learning And Development."]</p>
+    </div>
+    <div class="admin-header-actions">
+        <a class="btn btn-itg-outline btn-itg--pill btn-itg--lg" asp-controller="Analytics" asp-action="Index">
+            <i class="bi bi-bar-chart-line" aria-hidden="true"></i> @L["Analytics"]
+        </a>
+        <a class="btn btn-itg btn-itg--pill btn-itg--lg" asp-controller="Certificates" asp-action="Index">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> @L["Manage Courses"]
+        </a>
+    </div>
+</div>
+
+@* ---------- Summary cards ---------- *@
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <span class="stat-icon stat-icon--blue"><i class="bi bi-people" aria-hidden="true"></i></span>
+            <div class="stat-body">
+                <span class="stat-label">@L["Total Employees"]</span>
+                <span class="stat-value">@Model.TotalEmployees</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <span class="stat-icon stat-icon--blue"><i class="bi bi-book" aria-hidden="true"></i></span>
+            <div class="stat-body">
+                <span class="stat-label">@L["Completed For Promotion"]</span>
+                <span class="stat-value">@Model.ReadyForPromotion</span>
+            </div>
+            <a class="stat-link" asp-action="Index" asp-route-status="@CareerStatus.ReadyForPromotion">
+                @L["View"] <i class="bi bi-arrow-right flip-rtl" aria-hidden="true"></i>
+            </a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <span class="stat-icon stat-icon--amber"><i class="bi bi-file-earmark-text" aria-hidden="true"></i></span>
+            <div class="stat-body">
+                <span class="stat-label">@L["Pending HR Review"]</span>
+                <span class="stat-value">@Model.PendingReviews</span>
+            </div>
+            <a class="stat-link" asp-controller="Reviews" asp-action="Index">
+                @L["Review"] <i class="bi bi-arrow-right flip-rtl" aria-hidden="true"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+@* ---------- Employees table ---------- *@
+<section class="surface surface--solid table-card" aria-labelledby="employeesTitle">
+    <form method="get" id="employeeFilters" class="table-toolbar">
+        <div class="table-heading">
+            <h3 id="employeesTitle">@L["Employees"]</h3>
+            <span>@L["{0} Employees", Model.TotalEmployees]</span>
+        </div>
+
+        <div class="table-search">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="search" name="q" value="@Model.Search" data-live-search placeholder="@L["Search by name or ID"]"
+                   aria-label="@L["Search by name or ID"]" />
+        </div>
+
+        <div class="table-filters">
+            <label class="filter-field">
+                <span>@L["Department"]</span>
+                <select name="department" class="form-select filter-select" data-auto-submit>
+                    <option value="">@L["All Departments"]</option>
+                    @foreach (var department in Model.Departments)
+                    {
+                        <option value="@department.Value" selected="@department.Selected">@department.Text</option>
+                    }
+                </select>
+            </label>
+            <label class="filter-field">
+                <span>@L["Status"]</span>
+                <select name="status" class="form-select filter-select" data-auto-submit>
+                    <option value="">@L["All Statuses"]</option>
+                    @foreach (var (value, text) in statuses)
+                    {
+                        <option value="@value" selected="@(Model.Status == value)">@L[text]</option>
+                    }
+                </select>
+            </label>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="itg-table">
+            <thead>
+                <tr>
+                    <th scope="col">@L["Employee"]</th>
+                    <th scope="col">@L["Department"]</th>
+                    <th scope="col">@L["Current Role"]</th>
+                    <th scope="col">@L["Learning Progress"]</th>
+                    <th scope="col">@L["Status"]</th>
+                    <th scope="col" class="text-center">@L["Actions"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Rows.Count == 0)
+                {
+                    <tr>
+                        <td colspan="6" class="table-empty">@L["No employees match your filters."]</td>
+                    </tr>
+                }
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td>
+                            <div class="person-cell">
+                                <span class="avatar avatar--@row.ColorIndex" aria-hidden="true">@row.Initials</span>
+                                <div>
+                                    <span class="person-name">@row.Name</span>
+                                    <span class="person-id">@row.EmployeeNumber</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="cell-muted">@(row.DepartmentName ?? "—")</td>
+                        <td class="cell-muted">@(row.CurrentRole ?? "—")</td>
+                        <td>
+                            <div class="table-progress">
+                                <div class="meter" role="progressbar" aria-label="@L["Learning Progress"]"
+                                     aria-valuenow="@row.Percent" aria-valuemin="0" aria-valuemax="100">
+                                    <div class="meter-fill" style="width: @row.Percent%"></div>
+                                </div>
+                                <span>@row.Percent%</span>
+                            </div>
+                        </td>
+                        <td><partial name="_CareerStatusPill" model="row.Status" /></td>
+                        <td class="text-center">
+                            <a class="table-link" asp-controller="Employees" asp-action="Details" asp-route-id="@row.Id">
+                                @L["Record"]
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-footer">
+        <span class="table-footer-info">
+            @L["Showing {0}-{1} of {2} employees", Model.FirstItem, Model.LastItem, Model.MatchingCount]
+        </span>
+
+        <nav aria-label="@L["Pages"]">
+            <ul class="pager">
+                <li>
+                    <a class="pager-btn @(Model.Page == 1 ? "disabled" : "")" asp-action="Index"
+                       asp-all-route-data="RouteFor(Math.Max(1, Model.Page - 1))" aria-label="@L["Previous"]">
+                        <i class="bi bi-chevron-left flip-rtl" aria-hidden="true"></i>
+                    </a>
+                </li>
+                @for (var i = 0; i < pages.Count; i++)
+                {
+                    if (i > 0 && pages[i] - pages[i - 1] > 1)
+                    {
+                        <li><span class="pager-gap">…</span></li>
+                    }
+                    <li>
+                        <a class="pager-btn @(pages[i] == Model.Page ? "active" : "")" asp-action="Index"
+                           asp-all-route-data="RouteFor(pages[i])" aria-current="@(pages[i] == Model.Page ? "page" : null)">
+                            @pages[i]
+                        </a>
+                    </li>
+                }
+                <li>
+                    <a class="pager-btn @(Model.Page == Model.TotalPages ? "disabled" : "")" asp-action="Index"
+                       asp-all-route-data="RouteFor(Math.Min(Model.TotalPages, Model.Page + 1))" aria-label="@L["Next"]">
+                        <i class="bi bi-chevron-right flip-rtl" aria-hidden="true"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <label class="page-size">
+            <span class="visually-hidden">@L["Rows per page"]</span>
+            <select name="pageSize" form="employeeFilters" class="form-select filter-select" data-auto-submit>
+                @foreach (var size in AdminDashboardViewModel.PageSizeOptions)
+                {
+                    <option value="@size" selected="@(size == Model.PageSize)">@L["{0} / Page", size]</option>
+                }
+            </select>
+        </label>
+    </div>
+</section>

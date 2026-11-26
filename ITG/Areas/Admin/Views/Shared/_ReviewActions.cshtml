@@ -1,0 +1,20 @@
+@model ReviewActionModel
+@* Approve / Reject buttons for one pending upload *@
+@{
+    var returnUrl = $"{Context.Request.PathBase}{Context.Request.Path}{Context.Request.QueryString}";
+}
+
+<div class="review-actions">
+    <form asp-area="Admin" asp-controller="Reviews" asp-action="Approve" method="post" class="m-0">
+        <input type="hidden" name="id" value="@Model.SubmissionId" />
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+        <button type="submit" class="icon-action icon-action--success" title="@L["Approve"]" aria-label="@L["Approve"]">
+            <i class="bi bi-check-lg" aria-hidden="true"></i>
+        </button>
+    </form>
+    <button type="button" class="icon-action icon-action--danger" title="@L["Reject"]" aria-label="@L["Reject"]"
+            data-bs-toggle="modal" data-bs-target="#rejectModal"
+            data-reject-id="@Model.SubmissionId" data-reject-title="@Model.CertificateTitle">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+    </button>
+</div>

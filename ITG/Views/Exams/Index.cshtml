@@ -1,0 +1,157 @@
+@model ExamsIndexViewModel
+@{
+    ViewData["Title"] = L["Exams"].Value;
+    var overview = Model.Overview;
+    var filters = new[]
+    {
+        ("all", "All", overview.TotalCount),
+        ("available", "Available", overview.AvailableCount),
+        ("completed", "Completed", overview.CompletedCount)
+    };
+}
+
+<header class="page-header">
+    <h2 class="page-title">@L["Exams"]</h2>
+    <p class="page-subtitle">@L["Test your skills and track your progress"]</p>
+</header>
+
+@* ---------- Overview ---------- *@
+<section class="surface surface--tinted exam-overview" aria-labelledby="overviewTitle">
+    <div class="exam-overview-head">
+        <h3 id="overviewTitle">@L["Exam Overview"]</h3>
+        <a class="link-arrow" asp-controller="Records" asp-action="Index">@L["View record"]</a>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="mini-stat">
+                <span class="mini-stat-label">@L["Exams completed"]</span>
+                <span class="mini-stat-value">@overview.CompletedCount <small>@L["of {0}", overview.TotalCount]</small></span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mini-stat">
+                <span class="mini-stat-label">@L["Average score"]</span>
+                <span class="mini-stat-value text-itg-primary">@(overview.AverageScore?.ToString() ?? "—") <small>/100</small></span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mini-stat">
+                <span class="mini-stat-label">@L["Available to take"]</span>
+                <span class="mini-stat-value">@overview.AvailableCount</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="progress-block">
+        <div class="progress-meta">
+            <span class="fw-semibold">@L["{0} of {1} exams completed", overview.CompletedCount, overview.TotalCount]</span>
+            <span class="progress-percent">@overview.Percent%</span>
+        </div>
+        <div class="meter meter--lg" role="progressbar" aria-label="@L["Exams completed"]"
+             aria-valuenow="@overview.Percent" aria-valuemin="0" aria-valuemax="100">
+            <div class="meter-fill" style="width: @overview.Percent%"></div>
+        </div>
+    </div>
+</section>
+
+@* ---------- Filters ---------- *@
+<nav class="filter-pills" aria-label="@L["Filter exams"]">
+    @foreach (var (value, text, count) in filters)
+    {
+        <a class="filter-pill @(Model.Filter == value ? "active" : "")" asp-action="Index" asp-route-filter="@value"
+           aria-current="@(Model.Filter == value ? "page" : null)">
+            @L[text] (@count)
+        </a>
+    }
+</nav>
+
+@* ---------- Exam cards ---------- *@
+@if (overview.TotalCount == 0)
+{
+    @* No exam is linked to the employee's current or next position yet *@
+    <div class="empty-state">
+        <i class="bi bi-card-checklist" aria-hidden="true"></i>
+        <h3>@L["No exams for your role yet"]</h3>
+        <p>@L["Exams appear here when HR links them to your current or next position."]</p>
+    </div>
+}
+else if (!Model.VisibleExams.Any())
+{
+    <div class="empty-state">
+        <i class="bi bi-card-checklist" aria-hidden="true"></i>
+        <h3>@L["No exams here"]</h3>
+        <p>@L["Try another filter."]</p>
+    </div>
+}
+else
+{
+    <div class="exam-grid">
+        @foreach (var exam in Model.VisibleExams)
+        {
+            <article class="exam-card" id="exam-@exam.ExamId">
+                <div class="exam-card-badges">
+                    @switch (exam.State)
+                    {
+                        case ExamCardState.Completed:
+                            <span class="status-pill status-pill--success"><i class="bi bi-check-lg" aria-hidden="true"></i> @L["Completed"]</span>
+                            break;
+                        case ExamCardState.Failed:
+                            <span class="status-pill status-pill--danger"><i class="bi bi-x-lg" aria-hidden="true"></i> @L["Failed"]</span>
+                            break;
+                        case ExamCardState.InProgress:
+                            <span class="status-pill status-pill--warning">@L["In Progress"]</span>
+                            break;
+                        default:
+                            <span class="status-pill status-pill--info">@L["Available"]</span>
+                            break;
+                    }
+                    <partial name="_ExamRoleBadges" model="exam" />
+                </div>
+
+                <h3 class="exam-card-title">@exam.Title</h3>
+
+                <div class="exam-card-meta">
+                    <span><i class="bi bi-clock" aria-hidden="true"></i> @L["{0} min", exam.DurationMinutes]</span>
+                    <span><i class="bi bi-ui-checks" aria-hidden="true"></i> @L["{0} questions", exam.QuestionCount]</span>
+                </div>
+
+                <div class="exam-card-footer">
+                    @if (exam.State == ExamCardState.InProgress)
+                    {
+                        <a class="btn btn-itg btn-itg--pill exam-card-btn" asp-action="Take" asp-route-id="@exam.InProgressAttemptId">
+                            @L["Continue exam"]
+                        </a>
+                    }
+                    else if (exam.State is ExamCardState.Completed or ExamCardState.Failed)
+                    {
+                        <div class="exam-card-score @(exam.State == ExamCardState.Failed ? "exam-card-score--failed" : "")">
+                            <strong>@exam.LatestScore/100</strong>
+                            <span>@L["Score"] · @L["Attempt {0}", exam.LatestAttemptNumber ?? 1]</span>
+                        </div>
+                        <div class="exam-card-actions">
+                            <form asp-action="Start" asp-route-id="@exam.ExamId" method="post" class="m-0"
+                                  data-loading="@L["Preparing your exam with AI..."]">
+                                <button type="submit" class="icon-action" title="@L["Retake"]" aria-label="@L["Retake"]">
+                                    <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                                </button>
+                            </form>
+                            <a class="btn btn-itg btn-itg--pill" asp-action="Result" asp-route-id="@exam.LatestAttemptId">
+                                @L["View result"]
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <form asp-action="Start" asp-route-id="@exam.ExamId" method="post" class="m-0 w-100 text-center"
+                              data-loading="@L["Preparing your exam with AI..."]">
+                            <button type="submit" class="btn btn-itg btn-itg--pill exam-card-btn">@L["Start exam"]</button>
+                        </form>
+                    }
+                </div>
+            </article>
+        }
+    </div>
+}
+
+<partial name="_LoadingOverlay" />

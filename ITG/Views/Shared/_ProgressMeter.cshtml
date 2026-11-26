@@ -1,0 +1,13 @@
+@model CareerProgress
+@* "X of Y requirements completed" + percentage + bar *@
+
+<div class="progress-block">
+    <div class="progress-meta">
+        <span>@L["{0} of {1} requirements completed", Model.CompletedCount, Model.TotalCount]</span>
+        <span class="progress-percent">@Model.Percent%</span>
+    </div>
+    <div class="meter meter--lg" role="progressbar" aria-label="@L["Career Progress"]"
+         aria-valuenow="@Model.Percent" aria-valuemin="0" aria-valuemax="100">
+        <div class="meter-fill" style="width: @Model.Percent%"></div>
+    </div>
+</div>

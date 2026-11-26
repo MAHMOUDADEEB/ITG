@@ -1,0 +1,34 @@
+@* Header + tabs shared by all "Manage" pages *@
+@{
+    var current = ViewContext.RouteData.Values["controller"]?.ToString();
+    var tabs = new[]
+    {
+        ("Certificates", "bi-patch-check", "Certificates"),
+        ("CareerPaths", "bi-diagram-3", "Career Paths"),
+        ("Roadmaps", "bi-signpost-split", "Roadmaps"),
+        ("Exams", "bi-card-checklist", "Exams"),
+        ("Employees", "bi-people", "Employees"),
+        ("Departments", "bi-building", "Departments")
+    };
+}
+
+<a class="back-link" asp-controller="Dashboard" asp-action="Index">
+    <i class="bi bi-arrow-left flip-rtl" aria-hidden="true"></i> @L["Back to Dashboard"]
+</a>
+
+<header class="page-header">
+    <h2 class="page-title">@L["Manage Learning"]</h2>
+    <p class="page-subtitle">@L["Certificates, career paths, roadmaps, exams and employees."]</p>
+</header>
+
+<nav class="manage-tabs" aria-label="@L["Manage Learning"]">
+    @foreach (var (controller, icon, text) in tabs)
+    {
+        var active = string.Equals(controller, current, StringComparison.OrdinalIgnoreCase);
+        <a class="manage-tab @(active ? "active" : "")" asp-controller="@controller" asp-action="Index"
+           aria-current="@(active ? "page" : null)">
+            <i class="bi @icon" aria-hidden="true"></i>
+            <span>@L[text]</span>
+        </a>
+    }
+</nav>

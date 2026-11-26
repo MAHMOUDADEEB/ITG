@@ -1,0 +1,187 @@
+@model RoadmapViewModel
+@{
+    ViewData["Title"] = L["Roadmap"].Value;
+    var progress = Model.Progress;
+    var nextId = progress.NextStep?.CertificateId;
+}
+
+<header class="page-header">
+    <h2 class="page-title">@L["Career Roadmap"]</h2>
+    @if (progress.HasTarget)
+    {
+        <p class="page-subtitle">@L["Your Path From {0} To {1}.", progress.CurrentPositionTitle ?? "", progress.TargetPositionTitle ?? ""]</p>
+    }
+</header>
+
+@* ---------- Summary ---------- *@
+<section class="surface surface--tinted roadmap-summary @(progress.HasTarget ? "roadmap-summary--split" : "")" aria-label="@L["Career Progress"]">
+    <div class="roadmap-summary-roles">
+        <partial name="_RoleTransition" model="progress" />
+    </div>
+
+    @if (progress.HasTarget)
+    {
+        var remaining = Math.Max(0, progress.TotalCount - progress.CompletedCount - progress.PendingCount);
+
+        @* Ring + three counters instead of a long bar *@
+        <div class="roadmap-summary-stats">
+            <partial name="_ProgressRing" model="progress.Percent" />
+            <ul class="roadmap-counts">
+                <li class="roadmap-count roadmap-count--done">
+                    <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                    <strong>@progress.CompletedCount</strong> @L["Completed"]
+                </li>
+                <li class="roadmap-count roadmap-count--pending">
+                    <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+                    <strong>@progress.PendingCount</strong> @L["Pending Review"]
+                </li>
+                <li class="roadmap-count roadmap-count--left">
+                    <i class="bi bi-circle" aria-hidden="true"></i>
+                    <strong>@remaining</strong> @L["Remaining"]
+                </li>
+            </ul>
+        </div>
+    }
+</section>
+
+<hr class="section-divider" />
+
+@if (progress.CanChoosePath)
+{
+    <div class="empty-state">
+        <i class="bi bi-signpost-split" aria-hidden="true"></i>
+        <h3>@L["Choose your path"]</h3>
+        <p>@L["Select your next role from the list above to see its required certificates."]</p>
+    </div>
+}
+else if (progress.IsAwaitingPathDecision)
+{
+    <div class="empty-state">
+        <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+        <h3>@L["Your next path is being set"]</h3>
+        <p>@L["HR will set your next career path. Your roadmap will appear here once it is ready."]</p>
+    </div>
+}
+else if (progress.IsTopOfPath)
+{
+    <div class="empty-state">
+        <i class="bi bi-trophy" aria-hidden="true"></i>
+        <h3>@L["Top of your path"]</h3>
+        <p>@L["You have reached the highest position in your career path."]</p>
+    </div>
+}
+else if (!progress.HasPosition)
+{
+    <div class="empty-state">
+        <i class="bi bi-person-badge" aria-hidden="true"></i>
+        <h3>@L["No position assigned"]</h3>
+        <p>@L["Please contact HR to assign your current position."]</p>
+    </div>
+}
+else if (progress.TotalCount == 0)
+{
+    <div class="empty-state">
+        <i class="bi bi-journal-check" aria-hidden="true"></i>
+        <h3>@L["No certificates yet"]</h3>
+        <p>@L["No certificates are required for this role yet."]</p>
+    </div>
+}
+else
+{
+    if (progress.IsReadyForPromotion)
+    {
+        <div class="status-alert status-alert--success mb-4" role="status">
+            <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+            <span>@L["All certificates are verified. You are ready for promotion."]</span>
+        </div>
+    }
+
+    <ol class="timeline">
+        @for (var i = 0; i < progress.Items.Count; i++)
+        {
+            var item = progress.Items[i];
+            var afterDone = i > 0 && progress.Items[i - 1].IsCompleted;
+            var state = item.Status switch
+            {
+                RoadmapItemStatus.Verified => "done",
+                RoadmapItemStatus.Pending => "pending",
+                RoadmapItemStatus.Rejected => "rejected",
+                _ => item.CertificateId == nextId ? "next" : "upcoming"
+            };
+
+            <li class="timeline-item timeline-item--@state @(afterDone ? "timeline-item--after-done" : "")" id="cert-@item.CertificateId">
+                <span class="timeline-marker" aria-hidden="true">
+                    @if (state == "done")
+                    {
+                        <i class="bi bi-check-lg"></i>
+                    }
+                </span>
+
+                <article class="timeline-card">
+                    <div class="timeline-card-body">
+                        <h3 class="timeline-title">@item.Title</h3>
+                        @if (!string.IsNullOrEmpty(item.Description))
+                        {
+                            <p class="timeline-desc">@item.Description</p>
+                        }
+
+                        @if (item.Status == RoadmapItemStatus.Rejected && !string.IsNullOrEmpty(item.RejectionReason))
+                        {
+                            <p class="timeline-note timeline-note--danger">
+                                <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+                                @item.RejectionReason
+                            </p>
+                        }
+                        else if (item.Status == RoadmapItemStatus.Pending && item.SubmittedAt.HasValue)
+                        {
+                            <p class="timeline-note">
+                                <i class="bi bi-clock-history" aria-hidden="true"></i>
+                                @L["Uploaded on {0}", item.SubmittedAt.Value.ToLocalFromUtc().ToString("d MMM yyyy")]
+                            </p>
+                        }
+                    </div>
+
+                    <div class="timeline-actions">
+                        @if (item.Status is RoadmapItemStatus.NotSubmitted or RoadmapItemStatus.Rejected)
+                        {
+                            <button type="button" class="btn-chip" data-bs-toggle="modal" data-bs-target="#uploadModal"
+                                    data-cert-id="@item.CertificateId" data-cert-title="@item.Title">
+                                <i class="bi bi-upload" aria-hidden="true"></i>
+                                @(item.Status == RoadmapItemStatus.Rejected ? L["Upload Again"] : L["Upload"])
+                            </button>
+                        }
+                        else if (item.SubmissionId.HasValue)
+                        {
+                            <a class="btn-chip" asp-controller="CertificateFiles" asp-action="Open"
+                               asp-route-id="@item.SubmissionId" target="_blank" rel="noopener">
+                                <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+                                @L["View File"]
+                            </a>
+                        }
+
+                        @switch (state)
+                        {
+                            case "done":
+                                <span class="status-pill status-pill--success">@L["Completed"]</span>
+                                break;
+                            case "pending":
+                                <span class="status-pill status-pill--warning">@L["Pending Review"]</span>
+                                break;
+                            case "rejected":
+                                <span class="status-pill status-pill--danger">@L["Rejected"]</span>
+                                break;
+                            case "next":
+                                <span class="status-pill status-pill--info">@L["Next Step"]</span>
+                                break;
+                            default:
+                                <span class="status-pill status-pill--muted">@L["Upcoming"]</span>
+                                break;
+                        }
+                    </div>
+                </article>
+            </li>
+        }
+    </ol>
+
+    <partial name="_UploadCertificateModal" />
+}

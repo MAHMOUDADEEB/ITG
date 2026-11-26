@@ -1,0 +1,108 @@
+@model IReadOnlyList<CertificateListItem>
+@{
+    ViewData["Title"] = L["Certificates"].Value;
+}
+
+<partial name="_ManageTabs" />
+
+<section class="surface surface--solid table-card">
+    <div class="table-toolbar">
+        <div class="table-heading">
+            <h3>@L["Certificates"]</h3>
+            <span>@L["{0} items", Model.Count]</span>
+        </div>
+        <button type="button" class="btn btn-itg btn-itg--pill" data-bs-toggle="modal" data-bs-target="#certificateModal"
+                data-modal-title="@L["Add Certificate"]">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> @L["Add Certificate"]
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="itg-table">
+            <thead>
+                <tr>
+                    <th scope="col">@L["Title"]</th>
+                    <th scope="col">@L["Category"]</th>
+                    <th scope="col" class="text-center">@L["Roadmaps"]</th>
+                    <th scope="col" class="text-center">@L["Uploads"]</th>
+                    <th scope="col">@L["Status"]</th>
+                    <th scope="col" class="text-center">@L["Actions"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <span class="person-name">@item.Title</span>
+                            @if (!string.IsNullOrEmpty(item.Description))
+                            {
+                                <span class="cell-note">@item.Description</span>
+                            }
+                        </td>
+                        <td><span class="tag">@L[item.Category]</span></td>
+                        <td class="text-center cell-muted">@item.RoadmapCount</td>
+                        <td class="text-center cell-muted">@item.UploadCount</td>
+                        <td><partial name="_ActiveBadge" model="item.IsActive" /></td>
+                        <td>
+                            <div class="review-actions justify-content-center">
+                                <button type="button" class="icon-action" title="@L["Edit"]" aria-label="@L["Edit"]"
+                                        data-bs-toggle="modal" data-bs-target="#certificateModal" data-modal-title="@L["Edit Certificate"]"
+                                        data-fill='@Json.Serialize(new { item.Id, item.Title, item.Category, item.Description, item.IsActive })'>
+                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                </button>
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="m-0"
+                                      data-confirm="@L["Delete {0}?", item.Title]">
+                                    <button type="submit" class="icon-action icon-action--danger" title="@L["Delete"]" aria-label="@L["Delete"]">
+                                        <i class="bi bi-trash" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div class="modal fade" id="certificateModal" tabindex="-1" aria-labelledby="certificateModalLabel" aria-hidden="true" data-entity-modal>
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content itg-modal" asp-action="Save" method="post">
+            <div class="modal-header">
+                <h2 class="modal-title" id="certificateModalLabel">@L["Add Certificate"]</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@L["Close"]"></button>
+            </div>
+            <div class="modal-body form-stack">
+                <input type="hidden" name="Id" value="0" />
+                <label class="form-field">
+                    <span class="itg-label">@L["Title"]</span>
+                    <input type="text" name="Title" class="form-control itg-input" maxlength="150" required />
+                </label>
+                <label class="form-field">
+                    <span class="itg-label">@L["Category"]</span>
+                    <select name="Category" class="form-select itg-input" required>
+                        <option value="">@L["Choose a category"]</option>
+                        @foreach (var category in (IEnumerable<string>)ViewBag.Categories)
+                        {
+                            <option value="@category">@L[category]</option>
+                        }
+                    </select>
+                </label>
+                <label class="form-field">
+                    <span class="itg-label">@L["Description"]</span>
+                    <textarea name="Description" class="form-control itg-textarea" rows="3" maxlength="1000"></textarea>
+                </label>
+                <label class="form-check-row">
+                    <input type="checkbox" name="IsActive" value="true" class="form-check-input" checked />
+                    <input type="hidden" name="IsActive" value="false" />
+                    <span>@L["Active"]</span>
+                </label>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-itg-outline" data-bs-dismiss="modal">@L["Cancel"]</button>
+                <button type="submit" class="btn btn-itg">@L["Save"]</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,27 @@
+@model CareerProgress
+@* Drop-down shown at a fork when HR opened several paths.
+   The employee chooses once; after that only HR can change it. *@
+@{
+    var returnUrl = $"{Context.Request.PathBase}{Context.Request.Path}";
+}
+
+<form asp-area="" asp-controller="Roadmap" asp-action="SelectPath" method="post" class="path-selector">
+    <input type="hidden" name="returnUrl" value="@returnUrl" />
+    <label for="careerPathSelect" class="visually-hidden">@L["Choose your path"]</label>
+    <select id="careerPathSelect" name="careerPathId" class="form-select path-select" data-auto-submit
+            data-confirm-change="@L["Your choice is final and only HR can change it. Continue?"]">
+        @if (Model.SelectedCareerPathId == null || Model.PathOptions.All(o => o.CareerPathId != Model.SelectedCareerPathId))
+        {
+            <option value="" selected disabled>@L["Choose your path"]</option>
+        }
+        @foreach (var option in Model.PathOptions)
+        {
+            <option value="@option.CareerPathId" selected="@(option.CareerPathId == Model.SelectedCareerPathId)">
+                @option.PositionTitle · @option.PathName
+            </option>
+        }
+    </select>
+    <noscript>
+        <button type="submit" class="btn btn-itg btn-sm mt-2">@L["Save"]</button>
+    </noscript>
+</form>

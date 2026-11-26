@@ -1,0 +1,34 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+publish/
+PublishProfiles/
+*.pubxml
+*.pubxml.user
+*.publishsettings
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Secrets and server settings (never upload these)
+appsettings.Production.json
+**/App_Data/keys/
+
+# Certificates uploaded while testing (keep only the sample file)
+**/App_Data/certificates/*
+!**/App_Data/certificates/sample-certificate.pdf
+
+# OS files
+Thumbs.db
+.DS_Store
