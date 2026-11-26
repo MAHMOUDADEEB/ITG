@@ -97,7 +97,7 @@ Built with **ASP.NET Core MVC (.NET 10)**, **Entity Framework Core**, **SQL Serv
 ### 2. Get the code
 
 ```bash
-git clone https://github.com/<your-account>/<repository-name>.git
+git clone https://github.com/MAHMOUDADEEB/ITG.git
 ```
 
 Or click **Code ▸ Download ZIP** on GitHub and extract it. Then open **`ITG.slnx`** in Visual Studio.
